@@ -1,0 +1,12 @@
+# Python virtual environment
+/backend/venv/
+
+# Python cache
+/backend/__pycache__/
+*.pyc
+
+# Secret API keys
+/backend/.env
+
+# Node.js dependencies
+/frontend/node_modules/

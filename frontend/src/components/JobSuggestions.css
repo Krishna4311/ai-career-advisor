@@ -1,0 +1,46 @@
+.suggestions-container {
+  margin-top: 2rem;
+  text-align: left;
+  background-color: #1a1a1a;
+  padding: 1rem 2rem 2rem 2rem;
+  border-radius: 8px;
+}
+.suggestions-list {
+  list-style-type: none;
+  padding: 0;
+}
+.suggestion-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #333;
+}
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+.job-info {
+  display: flex;
+  flex-direction: column;
+}
+.job-title {
+  font-weight: bold;
+  font-size: 1.1em;
+}
+.match-score {
+  font-size: 0.9em;
+  color: #aaa;
+  margin-top: 4px;
+}
+.feedback-buttons button {
+  margin-left: 0.5rem;
+  background: #333;
+  border: 1px solid #555;
+  color: white;
+  cursor: pointer;
+  padding: 0.5rem 0.8rem;
+  border-radius: 4px;
+}
+.feedback-buttons button:hover {
+  background: #444;
+}

@@ -1,10 +1,9 @@
 import React from 'react';
-import './SkillForm.css';
+import './SkillForm.css'; // You should already have this CSS file
 
-// The component now receives props from its parent (App.jsx)
-function SkillForm({ skills, setSkills, jobTitle, setJobTitle, handleSubmit }) {
+function SkillForm({ skills, setSkills, jobTitle, setJobTitle, onSubmit }) {
   return (
-    <div className="form-container">
+    <form className="form-container" onSubmit={onSubmit}>
       <div className="input-group">
         <label htmlFor="skills">Your Skills (comma-separated)</label>
         <input
@@ -25,10 +24,10 @@ function SkillForm({ skills, setSkills, jobTitle, setJobTitle, handleSubmit }) {
           onChange={(e) => setJobTitle(e.target.value)}
         />
       </div>
-      <button className="analyze-button" onClick={handleSubmit}>
+      <button type="submit" className="analyze-button">
         Analyze My Skills
       </button>
-    </div>
+    </form>
   );
 }
 

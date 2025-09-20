@@ -1,0 +1,25 @@
+.results-container {
+  margin-top: 2rem;
+  text-align: left;
+  background-color: #1a1a1a;
+  padding: 1rem 2rem 2rem 2rem;
+  border-radius: 8px;
+}
+.skills-columns {
+  display: flex;
+  gap: 2rem;
+}
+.skills-column {
+  flex: 1;
+}
+.skills-column h3 {
+  border-bottom: 1px solid #444;
+  padding-bottom: 0.5rem;
+}
+.skills-column ul {
+  list-style-type: none;
+  padding: 0;
+}
+.skills-column li {
+  padding: 0.5rem 0;
+}

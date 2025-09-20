@@ -1,53 +1,63 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi.middleware.cors import CORSMiddleware 
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+import uuid
 
-# Import our custom modules
-from schemas import SkillAnalysisRequest, SkillAnalysisResponse
-from agent import analyze_skills_for_job
+# Import schemas for both V1 and V2
+from schemas import SkillAnalysisRequest, SkillAnalysisResponse, JobSuggestionResponse, FeedbackRequest
+# Import agent functions for both V1 and V2
+from agent import analyze_skills_for_job, get_job_suggestions
+from resume_parser import parse_resume
+from database import save_user_skills, save_feedback
 
-# Create the FastAPI app instance
-app = FastAPI(
-    title="Personalized AI Career Advisor API",
-    description="An API that uses a GenAI agent to perform a skill gap analysis.",
-    version="1.0.0"
-)
+app = FastAPI(title="AI Career Advisor API", version="2.0.0")
 
-# --- Middleware ---
-# Configure CORS (Cross-Origin Resource Sharing)
-# This allows our frontend (running on a different URL) to communicate with this backend.
-# For a demo, allowing all origins is fine. For production, you'd restrict this.
+# Note: CORS is not strictly needed for single-server mode, but doesn't hurt.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-# Add this to main.py
-'''
-@app.get("/")
-def read_root():
-    return {"message": "AI Career Advisor API is running"}
-'''
-# --- API Endpoint ---
+
+# --- V1 API ENDPOINT ---
 @app.post("/api/analyze", response_model=SkillAnalysisResponse)
 async def analyze_skills(request: SkillAnalysisRequest):
-    """
-    Receives a request with skills and a job title,
-    passes it to the agent, and returns the analysis.
-    """
-    try:
-        # Call the agent's function to do the actual work
-        result_dict = analyze_skills_for_job(
-            skills=request.skills, 
-            job_title=request.job_title
-        )
-        return SkillAnalysisResponse(**result_dict)
-    except Exception as e:
-        # This is a general catch-all for any unexpected errors from the agent
-        print(f"API Error: An error occurred: {e}")
-        raise HTTPException(status_code=500, detail="An internal error occurred in the AI agent.")
-# This must be the LAST line of code in main.py
-app.mount("/", StaticFiles(directory="dist", html = True), name="static")
+    result_dict = analyze_skills_for_job(
+        skills=request.skills, 
+        job_title=request.job_title
+    )
+    return SkillAnalysisResponse(**result_dict)
+
+# --- V2 API ENDPOINTS ---
+@app.post("/api/suggest-jobs", response_model=JobSuggestionResponse)
+async def suggest_jobs(resume_file: UploadFile = File(None), skills: str = Form(None)):
+    user_id = str(uuid.uuid4())
+    content_for_agent = ""
+    skills_to_save = []
+
+    if resume_file:
+        content_for_agent = await parse_resume(resume_file)
+        skills_to_save.append(content_for_agent[:5000])
+    elif skills:
+        content_for_agent = skills
+        skills_to_save = [s.strip() for s in skills.split(',')]
+    else:
+        raise HTTPException(status_code=400, detail="Please provide either a resume or skills.")
+
+    save_user_skills(user_id=user_id, skills=skills_to_save)
+    return await get_job_suggestions(content_for_agent)
+
+@app.post("/api/feedback")
+async def handle_feedback(request: FeedbackRequest):
+    save_feedback(
+        suggestion_id=request.suggestion_id,
+        job_title=request.job_title,
+        user_id=request.user_id,
+        rating=request.rating
+    )
+    return {"status": "success", "message": "Feedback received"}
+
+# This must be the LAST line to serve the frontend
+app.mount("/", StaticFiles(directory="dist", html=True), name="static")

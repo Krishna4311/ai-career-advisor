@@ -1,121 +1,54 @@
-import { useState } from 'react';
-import './App.css';
-import Tabs from './components/Tabs';
-import SkillForm from './components/SkillForm';
-import JobSuggestions from './components/JobSuggestions';
-import SkillGapResults from './components/SkillGapResults'; // Import the new results component
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { useAuth } from './AuthContext';
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
 
-function App() {
-  // State to manage which tab is active
-  const [activeTab, setActiveTab] = useState('jobSuggestions');
+function Navigation() {
+  const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
 
-  // V1 State: Skill Gap Analysis
-  const [v1Skills, setV1Skills] = useState('');
-  const [v1JobTitle, setV1JobTitle] = useState('');
-  const [v1Result, setV1Result] = useState(null);
-
-  // V2 State: Job Suggestions
-  const [resumeFile, setResumeFile] = useState(null);
-  const [v2Result, setV2Result] = useState(null);
-  
-  // Shared State
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  
-  const API_URL = ""; // For the final single-server setup
-
-  // --- V1 API Handler ---
-  const handleV1Submit = async (event) => {
-    event.preventDefault();
-    setIsLoading(true);
-    setError(null);
-    setV1Result(null);
-    
+  const handleLogout = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/analyze`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          skills: v1Skills.split(',').map(s => s.trim()),
-          job_title: v1JobTitle,
-        }),
-      });
-      if (!response.ok) throw new Error('Skill analysis failed. Please try again.');
-      const data = await response.json();
-      setV1Result(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // --- V2 API Handler ---
-  const handleV2Submit = async () => {
-    if (!resumeFile) return setError("Please select a resume file to upload.");
-    setIsLoading(true);
-    setError(null);
-    setV2Result(null);
-
-    const formData = new FormData();
-    formData.append("resume_file", resumeFile);
-
-    try {
-      const response = await fetch(`${API_URL}/api/suggest-jobs`, {
-        method: 'POST',
-        body: formData,
-      });
-      if (!response.ok) throw new Error('Job suggestion failed. Please try again.');
-      const data = await response.json();
-      setV2Result(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
+      await logout();
+      navigate('/login'); // Redirect to login after logout
+    } catch {
+      alert("Failed to log out.");
     }
   };
 
   return (
-    <>
-      <h1>AI Career Advisor</h1>
-      <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
-      
-      {/* Conditionally render the correct form based on the active tab */}
-      {activeTab === 'gapAnalysis' && (
-        <SkillForm
-          skills={v1Skills}
-          setSkills={setV1Skills}
-          jobTitle={v1JobTitle}
-          setJobTitle={setV1JobTitle}
-          onSubmit={handleV1Submit}
-        />
-      )}
-      
-      {activeTab === 'jobSuggestions' && (
-        <div className="form-container">
-          <div className="input-group">
-            <label htmlFor="resume">Upload Your Resume (PDF or DOCX)</label>
-            <input type="file" id="resume" accept=".pdf,.docx" onChange={(e) => setResumeFile(e.target.files[0])} />
-          </div>
-          <button className="analyze-button" onClick={handleV2Submit} disabled={isLoading}>
-            {isLoading ? "Analyzing..." : "Suggest Jobs"}
-          </button>
-        </div>
-      )}
-      
-      {/* Display Loading and Error Messages */}
-      {isLoading && <p>Analyzing...</p>}
-      {error && <p className="error-message">{error}</p>}
-      
-      {/* Conditionally render the correct results */}
-      {v1Result && activeTab === 'gapAnalysis' && (
-        <SkillGapResults result={v1Result} />
-      )}
-      
-      {v2Result && activeTab === 'jobSuggestions' && (
-        <JobSuggestions suggestions={v2Result.suggestions} apiUrl={API_URL} />
-      )}
-    </>
+    <nav className="main-nav">
+      <Link to="/">Home</Link>
+      <div className="nav-links">
+        {currentUser ? (
+          <>
+            <button onClick={handleLogout} className="nav-button">Logout</button>
+          </>
+        ) : (
+          <>
+            <Link to="/login">Login</Link>
+            <Link to="/signup">Sign Up</Link>
+          </>
+        )}
+      </div>
+    </nav>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <Navigation />
+      <main>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+        </Routes>
+      </main>
+    </Router>
   );
 }
 

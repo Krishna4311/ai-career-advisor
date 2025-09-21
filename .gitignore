@@ -10,3 +10,6 @@
 
 # Node.js dependencies
 /frontend/node_modules/
+/backend/serviceAccountKey.json
+/backend/serviceAccountKey.json
+/backend/serviceAccountKey.json

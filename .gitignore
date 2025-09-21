@@ -1,23 +1,15 @@
-# Python virtual environment
-/backend/venv/
-
-# Python cache
-/backend/__pycache__/
-*.pyc
-
-# Secret API keys
+# Secret files - DO NOT UPLOAD
 /backend/.env
 /backend/serviceAccountKey.json
+
+# Python dependencies & cache
+/backend/venv/
+/backend/__pycache__/
+*.pyc
 
 # Node.js dependencies
 /frontend/node_modules/
 
-# Build artifacts
-/frontend/dist/
-/backend/dist/
-
-# IDE and OS files
-.vscode/
-.idea/
+# OS / IDE specific files
 .DS_Store
-
+.vscode/

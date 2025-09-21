@@ -48,7 +48,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include the authentication router for signup/login
+# authentication router for signup/login
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 
 
@@ -76,7 +76,6 @@ async def suggest_jobs(resume_file: UploadFile = File(None), skills: str = Form(
     skills_to_save = []
     if resume_file:
         resume_text = await parse_resume(resume_file)
-        # New Two-Step Skill Extraction
         structured_resume = parse_resume_structure(resume_text)
         extracted_skills = extract_skills_from_structured_data(structured_resume)
         
@@ -96,7 +95,6 @@ async def suggest_jobs(resume_file: UploadFile = File(None), skills: str = Form(
     save_user_skills(user_id=user_id, skills=skills_to_save)
     suggestions_result = get_job_suggestions(content_for_agent)
     
-    # Add the parsed skills to the response
     suggestions_result['parsed_skills'] = skills_to_save
     
     return suggestions_result
@@ -119,5 +117,4 @@ async def analyze_skills(request: SkillAnalysisRequest):
 
 
 # --- SERVE FRONTEND ---
-# This must be the LAST mounted element
 app.mount("/", StaticFiles(directory="dist", html=True), name="static")

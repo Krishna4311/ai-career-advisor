@@ -29,4 +29,5 @@ COPY --from=frontend-builder /app/frontend/dist ./dist
 EXPOSE 8080
 
 # Command to run the application
-CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]The user wants a 3-minute video script for their "Career Craft" app, focusing on its project and workflow. I'll structure the script with an introduction, problem statement,
+  solution overview, key feature demonstrations (Skill Gap Analysis, Job Suggestions, Career Path Generation), a brief backend overview, and a concluding call to action.

@@ -1,9 +1,7 @@
 .results-container {
   margin-top: 2rem;
   text-align: left;
-  background-color: #1a1a1a;
-  padding: 1rem 2rem 2rem 2rem;
-  border-radius: 8px;
+  width: 100%;
 }
 .skills-columns {
   display: flex;
@@ -13,8 +11,9 @@
   flex: 1;
 }
 .skills-column h3 {
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid #e0e0e0;
   padding-bottom: 0.5rem;
+  color: #213547;
 }
 .skills-column ul {
   list-style-type: none;
@@ -22,4 +21,5 @@
 }
 .skills-column li {
   padding: 0.5rem 0;
+  color: #444;
 }

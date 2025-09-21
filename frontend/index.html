@@ -2,12 +2,83 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <!-- Consider adding a CareerCraft logo as the favicon -->
+    <link rel="icon" type="image/svg+xml" href="/briefcase.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React</title>
+    <title>CareerCraft</title>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+  <nav class="glass-navbar">
+    <div class="logo">
+      <img src="/Applogo.png" alt="CareerCraft Logo" class="logo-img" />
+      <span>CareerCraft</span>
+    </div>
+    <div class="nav-center">
+      <ul>
+        <li><a href="#">Explore</a></li>
+        <li><a href="#">Paths</a></li>
+        <li><a href="#">Subscriptions</a></li>
+      </ul>
+    </div>
+    <div class="navbar-controls">
+      <a href="#" class="nav-link">Sign In</a>
+      <a href="#" class="nav-button">Join</a>
+    </div>
+  </nav>
+  <section class="hero-section">
+    <div class="hero-logo">
+      <img src="/Applogo.png" alt="CareerCraft Logo" />
+    </div>
+    <h1>Craft your <span class="hero-blue">career</span>, today</h1>
+    <p class="hero-desc">Find jobs and build skills tailored to your resume—start your journey with CareerCraft.</p>
+    <button class="get-started-btn">Get started</button>
+  </section>
+  <div id="root"></div>
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div class="footer-top">
+        <div class="footer-logo">
+          <img src="/Applogo.png" alt="CareerCraft Logo" class="logo-img" />
+          <span>CareerCraft</span>
+        </div>
+        <p class="footer-tagline">Craft your career, today.</p>
+      </div>
+      <div class="footer-columns">
+        <div class="footer-column">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="#">About Us</a></li>
+            <li><a href="#">Join Us</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
+        </div>
+        <div class="footer-column">
+          <h4>Product</h4>
+          <ul>
+            <li><a href="#">Explore</a></li>
+            <li><a href="#">Paths</a></li>
+            <li><a href="#">Subscriptions</a></li>
+          </ul>
+        </div>
+        <div class="footer-column">
+          <h4>Resources</h4>
+          <ul>
+            <li><a href="#">Find Your Right Job</a></li>
+            <li><a href="#">Blog</a></li>
+            <li><a href="#">Help Center</a></li>
+          </ul>
+        </div>
+        <div class="footer-column">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Service</a></li>
+          </ul>
+        </div>
+      </div>
+      <p class="footer-copyright">&copy; 2025 CareerCraft. All rights reserved.</p>
+    </div>
+  </footer>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
 </html>

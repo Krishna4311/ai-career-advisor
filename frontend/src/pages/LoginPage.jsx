@@ -3,6 +3,7 @@ import { useAuth } from '../AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { auth, provider } from '../firebase'; // Firebase setup
 import { signInWithPopup } from 'firebase/auth';
+import './LoginPage.css';
 
 export default function LoginPage() {
   const emailRef = useRef();
@@ -22,22 +23,7 @@ export default function LoginPage() {
 
   async function handleGoogleSignIn() {
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      const idToken = await user.getIdToken(); // Firebase ID token
-
-      // Send ID token to backend for verification
-      const response = await fetch("/auth/google-login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ idToken }),
-      });
-
-      const data = await response.json();
-      console.log("Backend verified user:", data);
-
+      await signInWithPopup(auth, provider);
       navigate("/"); // Redirect to home after login
     } catch (error) {
       console.error("Google sign-in error:", error);
@@ -46,32 +32,22 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="form-container">
-      <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
-        <div className="input-group">
-          <label>Email</label>
-          <input type="email" ref={emailRef} required />
+    <div className="login-container">
+      <div className="login-box">
+        <h2>Login</h2>
+        <form onSubmit={handleSubmit}>
+          <div className="input-group">
+            <input type="email" ref={emailRef} required placeholder="Email" />
+          </div>
+          <div className="input-group">
+            <input type="password" ref={passwordRef} required placeholder="Password" />
+          </div>
+          <button className="login-button" type="submit">Log In</button>
+        </form>
+        <button className="google-login-button" onClick={handleGoogleSignIn}>Sign in with Google</button>
+        <div className="signup-link">
+          Need an account? <Link to="/signup">Sign Up</Link>
         </div>
-        <div className="input-group">
-          <label>Password</label>
-          <input type="password" ref={passwordRef} required />
-        </div>
-        <button className="analyze-button" type="submit">Log In</button>
-      </form>
-
-      <div style={{ marginTop: '1rem' }}>
-        <button
-          className="analyze-button"
-          style={{ marginTop: '1rem', backgroundColor: "#4285F4", color: "white" }}
-          onClick={handleGoogleSignIn}
-        >
-          Sign in with Google
-        </button>
-      </div>
-
-      <div style={{ marginTop: '1rem' }}>
-        Need an account? <Link to="/signup">Sign Up</Link>
       </div>
     </div>
   );

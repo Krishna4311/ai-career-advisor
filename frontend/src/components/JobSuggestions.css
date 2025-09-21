@@ -1,46 +1,84 @@
+/* Glassmorphic, clean UI for job suggestions */
 .suggestions-container {
   margin-top: 2rem;
-  text-align: left;
-  background-color: #1a1a1a;
-  padding: 1rem 2rem 2rem 2rem;
-  border-radius: 8px;
+  color: #213547;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  width: 100%;
 }
+
 .suggestions-list {
   list-style-type: none;
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5em;
 }
+
 .suggestion-item {
+  background: rgba(255,255,255,0.6);
+  border-radius: 1em;
+  padding: 1.5em 1em;
+  box-shadow: 0 2px 12px rgba(100, 108, 255, 0.10);
+  color: #222;
+  font-weight: 500;
+  transition: background 0.2s;
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  border-bottom: 1px solid #333;
-}
-.suggestion-item:last-child {
+  align-items: flex-start;
+  gap: 1em;
   border-bottom: none;
 }
+
+.suggestion-item:hover {
+  background: rgba(100, 108, 255, 0.08);
+}
+
 .job-info {
   display: flex;
   flex-direction: column;
+  gap: 0.5em;
 }
+
 .job-title {
-  font-weight: bold;
-  font-size: 1.1em;
+  font-weight: 800;
+  font-size: 1.25em;
+  color: #213547;
+  margin-bottom: 0.2em;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
+
 .match-score {
-  font-size: 0.9em;
-  color: #aaa;
+  font-size: 1em;
+  color: #646cff;
   margin-top: 4px;
+  font-weight: 600;
+  text-shadow: 0 2px 12px rgba(100, 108, 255, 0.18);
 }
+
 .feedback-buttons button {
   margin-left: 0.5rem;
-  background: #333;
-  border: 1px solid #555;
+  background: #646cff;
+  border: none;
   color: white;
   cursor: pointer;
-  padding: 0.5rem 0.8rem;
-  border-radius: 4px;
+  padding: 0.6rem 1.2rem;
+  border-radius: 1em;
+  font-weight: 600;
+  font-size: 0.9em;
+  box-shadow: 0 2px 12px rgba(100, 108, 255, 0.12);
+  transition: background 0.2s, transform 0.2s;
 }
+
 .feedback-buttons button:hover {
-  background: #444;
+  background: #535bf2;
+  transform: translateY(-1px);
+}
+
+/* Responsive */
+@media (max-width: 700px) {
+  .suggestions-container {
+    padding: 1.2rem 1rem;
+  }
 }

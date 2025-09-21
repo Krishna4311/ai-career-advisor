@@ -12,13 +12,13 @@ class UserCredentials(BaseModel):
 # --- Firebase Configuration ---
 # This config is for the CLIENT-side SDK wrapper (Pyrebase)
 firebase_config = {
-  "apiKey": "AIzaSyClm9wt5G8l6B1bzydl7dYzD97LttPngjQ",
-  "authDomain": "pcsr-v2.firebaseapp.com",
-  "projectId": "pcsr-v2",
-  "storageBucket": "pcsr-v2.firebasestorage.app",
-  "messagingSenderId": "200369475119",
-  "appId": "1:200369475119:web:124e32f8485acab77800da",
-  "databaseURL": "https://pcsr-v2-default-rtdb.firebaseio.com"
+  "apiKey": "Placeholder",
+  "authDomain": "Placeholder",
+  "projectId": "Placeholder",
+  "storageBucket": "Placeholder",
+  "messagingSenderId": "Placeholder",
+  "appId": "Placeholder",
+  "databaseURL": "Placeholder"
 }
 
 # Initialize Pyrebase (for user sign-in)

@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import firebase_admin
 from firebase_admin import credentials
+import os
+import json
 import uuid
 
 # Import all schemas
@@ -19,19 +21,25 @@ from agent import (
     extract_skills_from_text, normalize_input
 )
 # Import other services
-from resume_parser import parse_resume
+from resume_parser import parse_resume, parse_resume_structure, extract_skills_from_structured_data
 from database import save_user_skills, save_feedback
 from auth import router as auth_router
 
-
 # --- Firebase Admin SDK Initialization ---
 if not firebase_admin._apps:
-    cred = credentials.Certificate("serviceAccountKey.json")
+    # Check for the service account key in environment variables
+    service_account_json_str = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
+    if service_account_json_str:
+        service_account_info = json.loads(service_account_json_str)
+        cred = credentials.Certificate(service_account_info)
+    else:
+        # Fallback to the local file for development (optional, but requires .env)
+        cred = credentials.Certificate("serviceAccountKey.json")
+    
     firebase_admin.initialize_app(cred)
 
-app = FastAPI(title="AI Career Advisor API", version="3.0.0")
+app = FastAPI(title="Career Craft API", version="3.0.0")
 
-# --- ADD THIS MIDDLEWARE BLOCK BACK ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -68,15 +76,16 @@ async def suggest_jobs(resume_file: UploadFile = File(None), skills: str = Form(
     skills_to_save = []
     if resume_file:
         resume_text = await parse_resume(resume_file)
-        # Use the new AI-powered skill extractor
-        extracted_skills = extract_skills_from_text(resume_text)
+        # New Two-Step Skill Extraction
+        structured_resume = parse_resume_structure(resume_text)
+        extracted_skills = extract_skills_from_structured_data(structured_resume)
         
         # Fallback to basic text splitting if AI fails
         if not extracted_skills:
             print("AI skill extraction failed. Falling back to basic text parsing.")
             extracted_skills = [s.strip() for s in resume_text.split('\n') if s.strip()]
 
-        content_for_agent = ", ".join(extracted_skills) # Join skills for the suggestion prompt
+        content_for_agent = ", ".join(extracted_skills)
         skills_to_save = extracted_skills
     elif skills:
         content_for_agent = skills
@@ -85,7 +94,7 @@ async def suggest_jobs(resume_file: UploadFile = File(None), skills: str = Form(
         raise HTTPException(status_code=400, detail="Please provide either a resume or skills.")
     
     save_user_skills(user_id=user_id, skills=skills_to_save)
-    suggestions_result = await get_job_suggestions(content_for_agent)
+    suggestions_result = get_job_suggestions(content_for_agent)
     
     # Add the parsed skills to the response
     suggestions_result['parsed_skills'] = skills_to_save

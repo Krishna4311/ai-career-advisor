@@ -1,5 +1,5 @@
 {
-  "name": "frontend",
+  "name": "career-craft",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,20 +10,27 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "firebase": "^12.3.0",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
+    "firebase": "^12.2.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "react-router-dom": "^7.9.1"
   },
   "devDependencies": {
-    "@eslint/js": "^9.35.0",
+    "@babel/core": "^7.28.4",
+    "@babel/eslint-parser": "^7.28.4",
+    "@babel/preset-react": "^7.27.1",
+    "@eslint/compat": "^1.3.2",
+    "@eslint/js": "^9.36.0",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
-    "@vitejs/plugin-react": "^5.0.2",
-    "eslint": "^9.35.0",
+    "@vitejs/plugin-react": "^5.0.3",
+    "eslint": "^9.36.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
-    "globals": "^16.4.0",
+    "globals": "^15.8.0",
     "vite": "^7.1.6"
   }
 }

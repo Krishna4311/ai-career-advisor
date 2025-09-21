@@ -1,7 +1,7 @@
-// Create this file at: src/AuthContext.jsx
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { auth } from './firebase';
-import { onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { onAuthStateChanged, signOut, signInWithCustomToken } from 'firebase/auth';
+import { API_URL } from "./api/config";
 
 const AuthContext = createContext();
 
@@ -13,12 +13,42 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  function signup(email, password) {
-    return createUserWithEmailAndPassword(auth, email, password);
+  async function signup(email, password) {
+    // 1. Call the backend to create the user and get a custom token
+    const response = await fetch(`${API_URL}/auth/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Failed to sign up.");
+    }
+
+    const data = await response.json();
+
+    // 2. Use the custom token to sign in on the client
+    return signInWithCustomToken(auth, data.customToken);
   }
 
-  function login(email, password) {
-    return signInWithEmailAndPassword(auth, email, password);
+  async function login(email, password) {
+    // 1. Call the backend to verify credentials and get a custom token
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Failed to log in.");
+    }
+
+    const data = await response.json();
+
+    // 2. Use the custom token to sign in on the client
+    return signInWithCustomToken(auth, data.customToken);
   }
 
   function logout() {
@@ -33,7 +63,7 @@ export function AuthProvider({ children }) {
     return unsubscribe;
   }, []);
 
-  const value = { currentUser, signup, login, logout };
+  const value = { currentUser, signup, login, logout, loading };
 
   return (
     <AuthContext.Provider value={value}>

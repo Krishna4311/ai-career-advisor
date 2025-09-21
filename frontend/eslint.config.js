@@ -1,29 +1,44 @@
-import js from '@eslint/js'
-import globals from 'globals'
-import reactHooks from 'eslint-plugin-react-hooks'
-import reactRefresh from 'eslint-plugin-react-refresh'
-import { defineConfig, globalIgnores } from 'eslint/config'
+import globals from "globals";
+import pluginJs from "@eslint/js";
+import pluginReactConfig from "eslint-plugin-react/configs/recommended.js";
+import babelParser from "@babel/eslint-parser";
+import eslintPluginJsxA11y from "eslint-plugin-jsx-a11y";
+import eslintConfigPrettier from "eslint-config-prettier";
 
-export default defineConfig([
-  globalIgnores(['dist']),
+export default [
   {
-    files: ['**/*.{js,jsx}'],
-    extends: [
-      js.configs.recommended,
-      reactHooks.configs['recommended-latest'],
-      reactRefresh.configs.vite,
-    ],
     languageOptions: {
-      ecmaVersion: 2020,
       globals: globals.browser,
+      parser: babelParser,
       parserOptions: {
-        ecmaVersion: 'latest',
-        ecmaFeatures: { jsx: true },
-        sourceType: 'module',
+        requireConfigFile: false,
+        babelOptions: {
+          presets: ["@babel/preset-react"],
+        },
+      },
+    },
+  },
+  pluginJs.configs.recommended,
+  pluginReactConfig,
+  {
+    plugins: {
+      "jsx-a11y": eslintPluginJsxA11y,
+    },
+    rules: {
+      ...eslintPluginJsxA11y.configs.recommended.rules,
+    },
+  },
+  eslintConfigPrettier,
+  {
+    settings: {
+      react: {
+        version: "detect",
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
-    },
-  },
-])
+        "react/react-in-jsx-scope": "off",
+        "react/prop-types": "off",
+        "no-unused-vars": ["warn", { "varsIgnorePattern": "^_" }]
+    }
+  }
+];

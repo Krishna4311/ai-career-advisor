@@ -1,11 +1,140 @@
-#root {
-  max-width: 1280px;
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-header {
+  background-color: var(--card-background);
+  border-bottom: 1px solid var(--border-color);
+  padding: 0 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.main-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1024px;
   margin: 0 auto;
+  height: 64px;
+}
+
+.nav-logo {
+  font-weight: 700;
+  font-size: 1.2rem;
+  text-decoration: none;
+  color: var(--heading-color);
+}
+
+.nav-links {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.nav-links a, .nav-button {
+  text-decoration: none;
+  color: var(--text-color);
+  font-weight: 500;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.nav-links a:hover {
+  background-color: #f1f3f4;
+}
+
+.nav-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1em;
+}
+
+.user-email {
+  font-size: 0.9em;
+  color: var(--text-color);
+  opacity: 0.8;
+}
+
+.app-main {
+  flex-grow: 1; 
+  display: flex;
+  flex-direction: column;
+  align-items: center; 
+  justify-content: center;
+  width: 100%;
+  max-width: 1024px;
+  margin: 2rem auto;
+  padding: 0 2rem;
+  box-sizing: border-box;
+}
+
+.form-container {
+  background-color: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
   padding: 2rem;
-  text-align: center;
+  box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+  width: 100%;
+  max-width: 600px;
+  box-sizing: border-box;
+}
+
+.input-group {
+  text-align: left;
+  margin-bottom: 1.5rem;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background-color: var(--background-color);
+  color: var(--text-color);
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.analyze-button {
+  width: 100%;
+  padding: 0.8rem 1.5rem;
+  border-radius: 4px;
+  border: none;
+  font-size: 1em;
+  font-weight: 500;
+  background-color: var(--google-blue);
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.analyze-button:hover {
+  background-color: var(--google-blue-hover);
 }
 
 .error-message {
-  color: #ff6b6b;
-  margin-top: 1rem;
+  color: #d93025;
+}
+
+/* --- Responsive Styles for Mobile --- */
+@media (max-width: 768px) {
+  .app-header, .app-main {
+    padding: 0 1rem;
+  }
+  .user-email {
+    display: none;
+  }
 }

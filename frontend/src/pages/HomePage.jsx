@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import '../App.css';
+
 import Tabs from '../components/Tabs';
 import SkillForm from '../components/SkillForm';
 import JobSuggestions from '../components/JobSuggestions';
@@ -20,25 +20,25 @@ function HomePage() {
   // State for V2
   const [resumeFile, setResumeFile] = useState(null);
   const [v2Result, setV2Result] = useState(null);
-  const [parsedSkills, setParsedSkills] = useState([]); // Store skills from resume
 
   // State for V3
   const [v3Skills, setV3Skills] = useState('');
   const [v3TargetJob, setV3TargetJob] = useState('');
   const [v3Result, setV3Result] = useState(null);
 
-  const clearResults = () => {
-    setV1Result(null);
-    setV2Result(null);
-    setV3Result(null);
-    setError(null);
-  };
+  const clearError = () => setError(null);
+
+  const handleTabSwitch = (tab) => {
+    clearError();
+    setActiveTab(tab);
+  }
 
   // --- V1 API Handler (Standalone) ---
   const handleV1Submit = async (event) => {
     event.preventDefault();
     setIsLoading(true);
-    clearResults();
+    setV1Result(null);
+    setError(null);
     try {
       const response = await fetch(`${API_URL}/api/analyze`, {
         method: 'POST',
@@ -47,7 +47,12 @@ function HomePage() {
       });
       if (!response.ok) throw new Error('Skill analysis failed.');
       const data = await response.json();
-      setV1Result(data);
+      if (!data.matching_skills?.length && !data.missing_skills?.length) {
+        setError("Could not analyze skills for this job. Please try a different job title.");
+        setV1Result(null);
+      } else {
+        setV1Result(data);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -59,7 +64,8 @@ function HomePage() {
   const handleV2Submit = async () => {
     if (!resumeFile) return setError("Please select a resume file to upload.");
     setIsLoading(true);
-    clearResults();
+    setV2Result(null);
+    setError(null);
     const formData = new FormData();
     formData.append("resume_file", resumeFile);
     try {
@@ -69,8 +75,12 @@ function HomePage() {
       });
       if (!response.ok) throw new Error('Job suggestion failed.');
       const data = await response.json();
-      setV2Result(data);
-      setParsedSkills(data.parsed_skills || []);
+      if (!data.suggestions?.length) {
+        setError("Could not suggest any jobs for this resume. Please try another one.");
+        setV2Result(null);
+      } else {
+        setV2Result(data);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -82,7 +92,8 @@ function HomePage() {
   const handleV3Submit = async (event) => {
     event.preventDefault();
     setIsLoading(true);
-    clearResults();
+    setV3Result(null);
+    setError(null);
     try {
       const response = await fetch(`${API_URL}/api/generate-path`, {
         method: 'POST',
@@ -91,7 +102,12 @@ function HomePage() {
       });
       if (!response.ok) throw new Error('Career path generation failed.');
       const data = await response.json();
-      setV3Result(data);
+      if (!data.milestones?.length && !data.next_skills?.length && !data.recommended_actions?.length) {
+        setError("Could not generate a career path for this role.");
+        setV3Result(null);
+      } else {
+        setV3Result(data);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -99,36 +115,36 @@ function HomePage() {
     }
   };
 
-  // --- NEW COMBINED WORKFLOW from Job Suggestions ---
-  const handleSuggestionAnalysis = async (jobTitle) => {
+  // --- V2 -> V3 Workflow ---
+  const handleSuggestionAnalysis = async (jobTitle, skillsForAnalysis) => {
+    const skillsPayload = Array.isArray(skillsForAnalysis) ? skillsForAnalysis : [];
+    if (skillsPayload.length === 0) {
+        setError("Could not find skills from the resume to perform the analysis. Please try again or use the manual input tabs.");
+        return;
+    }
+
     setIsLoading(true);
-    clearResults();
-    setV3TargetJob(jobTitle); // Set target job for display
+    setV3Result(null);
+    setError(null);
+    setV3TargetJob(jobTitle);
 
     try {
-      // 1. Perform Skill Gap Analysis
-      const analyzeResponse = await fetch(`${API_URL}/api/analyze`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ skills: parsedSkills, job_title: jobTitle }),
-      });
-      if (!analyzeResponse.ok) throw new Error('Skill analysis failed.');
-      const analyzeData = await analyzeResponse.json();
-      setV1Result(analyzeData);
-
-      // 2. Generate Career Path
       const pathResponse = await fetch(`${API_URL}/api/generate-path`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ current_skills: parsedSkills, target_job: jobTitle }),
+        body: JSON.stringify({ current_skills: skillsPayload, target_job: jobTitle }),
       });
       if (!pathResponse.ok) throw new Error('Career path generation failed.');
       const pathData = await pathResponse.json();
-      setV3Result(pathData);
-
-      // Switch to the career path tab to show the combined results
-      setActiveTab('careerPath');
-
+      
+      if (!pathData.milestones?.length && !pathData.next_skills?.length && !pathData.recommended_actions?.length) {
+        setError(`Could not generate a career path for "${jobTitle}". The role may be too specific or not recognized.`);
+        setV3Result(null);
+        setActiveTab('jobSuggestions'); // Stay on the current tab if it fails
+      } else {
+        setV3Result(pathData);
+        setActiveTab('careerPath'); // Switch to the career path tab on success
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -138,7 +154,7 @@ function HomePage() {
 
   return (
     <>
-      <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Tabs activeTab={activeTab} setActiveTab={handleTabSwitch} />
 
       {isLoading && <p>Loading...</p>}
       {error && <p className="error-message">{error}</p>}
@@ -146,6 +162,7 @@ function HomePage() {
       {/* V3 Career Path Tab */}
       {activeTab === 'careerPath' && (
         <>
+          {/* Standalone V3 Form */}
           <form className="form-container" onSubmit={handleV3Submit}>
             <div className="input-group">
               <label htmlFor="v3-skills">Your Current Skills (comma-separated)</label>
@@ -160,7 +177,6 @@ function HomePage() {
             </button>
           </form>
           {v3Result && <CareerPathDisplay pathData={v3Result} targetJob={v3TargetJob} />}
-          {v1Result && <SkillGapResults result={v1Result} />}{/* Also show skill gap here */}
         </>
       )}
 
@@ -176,7 +192,7 @@ function HomePage() {
               {isLoading ? "Analyzing..." : "Suggest Jobs"}
             </button>
           </div>
-          {v2Result && <JobSuggestions suggestions={v2Result.suggestions} onAnalysis={handleSuggestionAnalysis} />}
+          {v2Result && <JobSuggestions v2Result={v2Result} onAnalysis={handleSuggestionAnalysis} />}
         </>
       )}
 

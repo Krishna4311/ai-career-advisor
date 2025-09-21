@@ -61,16 +61,6 @@ export default function LoginPage() {
       </form>
 
       <div style={{ marginTop: '1rem' }}>
-        <button
-          className="analyze-button"
-          style={{ marginTop: '1rem', backgroundColor: "#4285F4", color: "white" }}
-          onClick={handleGoogleSignIn}
-        >
-          Sign in with Google
-        </button>
-      </div>
-
-      <div style={{ marginTop: '1rem' }}>
         Need an account? <Link to="/signup">Sign Up</Link>
       </div>
     </div>

@@ -1,46 +1,73 @@
 .suggestions-container {
   margin-top: 2rem;
   text-align: left;
-  background-color: #1a1a1a;
-  padding: 1rem 2rem 2rem 2rem;
+  background-color: var(--card-background);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
+  padding: 1rem 2rem 2rem 2rem;
+  box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
 }
+
+.suggestions-container h2 {
+  font-size: 1.2em;
+  color: var(--heading-color);
+}
+
 .suggestions-list {
   list-style-type: none;
   padding: 0;
+  margin: 0;
 }
+
 .suggestion-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
-  border-bottom: 1px solid #333;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border-color);
 }
+
 .suggestion-item:last-child {
   border-bottom: none;
+  padding-bottom: 0;
 }
+
 .job-info {
   display: flex;
   flex-direction: column;
 }
+
 .job-title {
-  font-weight: bold;
+  font-weight: 500;
   font-size: 1.1em;
+  color: var(--text-color);
 }
+
 .match-score {
   font-size: 0.9em;
-  color: #aaa;
+  color: var(--text-color);
+  opacity: 0.7;
   margin-top: 4px;
 }
+
 .feedback-buttons button {
   margin-left: 0.5rem;
-  background: #333;
-  border: 1px solid #555;
-  color: white;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
   cursor: pointer;
   padding: 0.5rem 0.8rem;
   border-radius: 4px;
+  transition: background-color 0.2s;
 }
+
 .feedback-buttons button:hover {
-  background: #444;
+  background-color: #f1f3f4;
+}
+
+/* Dark mode hover effect */
+@media (prefers-color-scheme: dark) {
+  .feedback-buttons button:hover {
+    background-color: #3c4043;
+  }
 }

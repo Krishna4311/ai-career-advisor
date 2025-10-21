@@ -3,11 +3,9 @@
 This web application provides personalized career advice by analyzing a user's resume using a generative AI model.
 
 ## Project Status
-
-**⚠️ WARNING: This repository contains critical security vulnerabilities due to exposed secrets. Do not use in production or expose publicly until all secrets have been properly secured and removed from the Git history.**
+ ongoing
 
 ## Setup Instructions
-
 Before running this application, you must configure your local environment by creating the necessary secret files.
 
 ### 1. Backend Setup
@@ -47,7 +45,3 @@ The frontend requires your Firebase project configuration.
         VITE_FIREBASE_AUTH_DOMAIN="YOUR_PROJECT_ID.firebaseapp.com"
         # ... and so on for all variables
         ```
-
-## Security Verification
-
-Before publishing this repository, ensure that no secrets have ever been committed to the Git history. If they have, you must purge them completely using a tool like `git-filter-repo`.

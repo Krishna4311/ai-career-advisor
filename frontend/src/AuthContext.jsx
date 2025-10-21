@@ -1,6 +1,11 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { auth } from './firebase';
-import { onAuthStateChanged, signOut, signInWithCustomToken } from 'firebase/auth';
+import {
+  onAuthStateChanged,
+  signOut,
+  signInWithCustomToken,
+  signInWithEmailAndPassword
+} from 'firebase/auth';
 import { API_URL } from "./api/config";
 
 const AuthContext = createContext();
@@ -14,7 +19,6 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   async function signup(email, password) {
-    // 1. Call the backend to create the user and get a custom token
     const response = await fetch(`${API_URL}/auth/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -28,27 +32,11 @@ export function AuthProvider({ children }) {
 
     const data = await response.json();
 
-    // 2. Use the custom token to sign in on the client
     return signInWithCustomToken(auth, data.customToken);
   }
 
   async function login(email, password) {
-    // 1. Call the backend to verify credentials and get a custom token
-    const response = await fetch(`${API_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || "Failed to log in.");
-    }
-
-    const data = await response.json();
-
-    // 2. Use the custom token to sign in on the client
-    return signInWithCustomToken(auth, data.customToken);
+    return signInWithEmailAndPassword(auth, email, password);
   }
 
   function logout() {

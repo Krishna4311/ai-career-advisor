@@ -1,7 +1,7 @@
 import React from 'react';
-import './SkillForm.css'; // You should already have this CSS file
+import './SkillForm.css';
 
-function SkillForm({ skills, setSkills, jobTitle, setJobTitle, onSubmit }) {
+function SkillForm({ skills, setSkills, jobTitle, setJobTitle, onSubmit, isLoading }) {
   return (
     <form className="form-container" onSubmit={onSubmit}>
       <div className="input-group">
@@ -24,8 +24,13 @@ function SkillForm({ skills, setSkills, jobTitle, setJobTitle, onSubmit }) {
           onChange={(e) => setJobTitle(e.target.value)}
         />
       </div>
-      <button type="submit" className="analyze-button">
-        Analyze My Skills
+
+      <button 
+        type="submit" 
+        className="analyze-button" 
+        disabled={isLoading}
+      >
+        {isLoading ? 'Analyzing...' : 'Analyze My Skills'}
       </button>
     </form>
   );

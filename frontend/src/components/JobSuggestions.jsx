@@ -4,7 +4,6 @@ import './JobSuggestions.css';
 function JobSuggestions({ v2Result, onAnalysis }) {
   const { suggestions, parsed_skills } = v2Result;
 
-  // Create a sorted copy of the suggestions array
   const sortedSuggestions = [...suggestions].sort((a, b) => b.match_score - a.match_score);
 
   return (
@@ -18,7 +17,6 @@ function JobSuggestions({ v2Result, onAnalysis }) {
               <span className="match-score">Match: {job.match_score}%</span>
             </div>
             <div className="feedback-buttons">
-              {/* This button now triggers the automatic analysis workflow */}
               <button onClick={() => onAnalysis(job.job_title, parsed_skills)} title="Analyze Skill Gap & Career Path">👍</button>
             </div>
           </li>

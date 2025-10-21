@@ -63,14 +63,11 @@ Pygments==2.19.2
 PyJWT==2.10.1
 pyparsing==3.2.4
 PyPDF2==3.0.1
-Pyrebase4==4.8.0
 python-docx==1.2.0
 python-dotenv==1.1.1
-python-jwt==4.1.0
 python-multipart==0.0.20
 PyYAML==6.0.2
 requests==2.32.5
-requests-toolbelt==0.10.1
 rich==14.1.0
 rich-toolkit==0.15.1
 rignore==0.6.4

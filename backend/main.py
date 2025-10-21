@@ -18,14 +18,15 @@ from schemas import (
 from agent import (
     analyze_skills_for_job, get_job_suggestions, 
     get_skills_for_job, generate_career_path,
-    extract_skills_from_text, normalize_input
+    extract_skills_from_text, normalize_input,
+    parse_resume_structure,
+    extract_skills_from_structured_data
 )
 # Import other services
-from resume_parser import parse_resume, parse_resume_structure, extract_skills_from_structured_data
+from resume_parser import parse_resume
 from database import save_user_skills, save_feedback
 from auth import router as auth_router
 
-# --- Firebase Admin SDK Initialization ---
 # --- Firebase Admin SDK Initialization ---
 if not firebase_admin._apps:
     service_account_json_str = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")

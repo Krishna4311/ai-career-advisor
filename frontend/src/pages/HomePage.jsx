@@ -5,6 +5,7 @@ import SkillForm from '../components/SkillForm';
 import JobSuggestions from '../components/JobSuggestions';
 import SkillGapResults from '../components/SkillGapResults';
 import CareerPathDisplay from '../components/CareerPathDisplay';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { API_URL } from "../api/config";
 
 function HomePage() {
@@ -119,8 +120,8 @@ function HomePage() {
   const handleSuggestionAnalysis = async (jobTitle, skillsForAnalysis) => {
     const skillsPayload = Array.isArray(skillsForAnalysis) ? skillsForAnalysis : [];
     if (skillsPayload.length === 0) {
-        setError("Could not find skills from the resume to perform the analysis. Please try again or use the manual input tabs.");
-        return;
+      setError("Could not find skills from the resume to perform the analysis. Please try again or use the manual input tabs.");
+      return;
     }
 
     setIsLoading(true);
@@ -136,7 +137,7 @@ function HomePage() {
       });
       if (!pathResponse.ok) throw new Error('Career path generation failed.');
       const pathData = await pathResponse.json();
-      
+
       if (!pathData.milestones?.length && !pathData.next_skills?.length && !pathData.recommended_actions?.length) {
         setError(`Could not generate a career path for "${jobTitle}". The role may be too specific or not recognized.`);
         setV3Result(null);
@@ -156,7 +157,7 @@ function HomePage() {
     <>
       <Tabs activeTab={activeTab} setActiveTab={handleTabSwitch} />
 
-      {isLoading && <p>Loading...</p>}
+      {isLoading && <LoadingSpinner message="The advisor is thinking..." />}
       {error && <p className="error-message">{error}</p>}
 
       {/* V3 Career Path Tab */}
@@ -205,6 +206,7 @@ function HomePage() {
             jobTitle={v1JobTitle}
             setJobTitle={setV1JobTitle}
             onSubmit={handleV1Submit}
+            isLoading={isLoading}
           />
           {v1Result && <SkillGapResults result={v1Result} />}
         </>

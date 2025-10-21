@@ -67,14 +67,23 @@ def get_job_suggestions(resume_text: str) -> dict:
 
 def get_skills_for_job(job_title: str) -> dict:
     """Gets skills for a job."""
+    
+    # This is the original, non-cached version
     prompt = f"""
-    You are a job market analyst. What are the technical, soft, and tool skills for a '{job_title}'?
+    You are a job market analyst. What are the technical, soft,
+    and tool skills for a '{job_title}'?
 
-    Return a JSON object with three keys: "technical_skills", "soft_skills", and "tool_skills". Each key should have a list of strings as its value.
+    Return a JSON object with three keys: "technical_skills",
+    "soft_skills", and "tool_skills". Each key should have a list of strings
+    as its value.
     """
+
     try:
-        response = model.generate_content(prompt, generation_config=genai.types.GenerationConfig(temperature=0.2))
+        response = model.generate_content(prompt,
+            generation_config=genai.types.GenerationConfig(temperature=0.2))
+        
         return _parse_json_from_text(response.text)
+
     except Exception as e:
         print(f"Agent Error (get_skills_for_job): {e}")
         return {"technical_skills": [], "soft_skills": [], "tool_skills": []}
@@ -148,7 +157,6 @@ def parse_resume_structure(resume_text: str) -> dict:
 
 def extract_skills_from_structured_data(resume_json: dict) -> list[str]:
     """Step 2: Extracts skills from the structured JSON resume data."""
-    # Combine relevant text fields for the AI to analyze
     skills_section = resume_json.get("skills", "")
     experience_section = resume_json.get("experience", "")
     combined_text = f"Skills Section: {skills_section}\nExperience Section: {experience_section}"

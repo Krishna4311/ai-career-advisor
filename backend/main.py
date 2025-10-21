@@ -26,17 +26,35 @@ from database import save_user_skills, save_feedback
 from auth import router as auth_router
 
 # --- Firebase Admin SDK Initialization ---
+# --- Firebase Admin SDK Initialization ---
 if not firebase_admin._apps:
-    # Check for the service account key in environment variables
     service_account_json_str = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
+    cred = None # Initialize cred to None
+
     if service_account_json_str:
+        # If the environment variable IS set (like in Cloud Run), use it
+        print("Initializing Firebase Admin SDK from environment variable.")
         service_account_info = json.loads(service_account_json_str)
         cred = credentials.Certificate(service_account_info)
     else:
-        # Fallback to the local file for development (optional, but requires .env)
-        cred = credentials.Certificate("serviceAccountKey.json")
-    
-    firebase_admin.initialize_app(cred)
+        # If the environment variable IS NOT set (like during local dev), try the local file
+        print("Initializing Firebase Admin SDK from local file 'serviceAccountKey.json'.")
+        try:
+            cred = credentials.Certificate("serviceAccountKey.json")
+        except FileNotFoundError:
+            print("\n!!! WARNING: serviceAccountKey.json not found. Backend auth features (token verification) will fail. !!!\n")
+        except Exception as e:
+            print(f"\n!!! ERROR: Failed to load serviceAccountKey.json: {e} !!!\n")
+
+    # Initialize the app only if credentials were successfully loaded
+    if cred:
+        try:
+            firebase_admin.initialize_app(cred)
+            print("Firebase Admin SDK initialized successfully.")
+        except Exception as e:
+             print(f"\n!!! ERROR: Firebase Admin SDK initialization failed: {e} !!!\n")
+    else:
+        print("\n!!! ERROR: Could not load Firebase credentials. Backend auth features will fail. !!!\n")
 
 app = FastAPI(title="Career Craft API", version="3.0.0")
 
@@ -53,7 +71,6 @@ app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 
 
 # --- API ENDPOINTS ---
-
 # --- V3 PUBLIC ENDPOINTS ---
 @app.post("/api/generate-path", response_model=CareerPathResponse, tags=["V3 Features"])
 async def generate_career_path_endpoint(request: CareerPathRequest):

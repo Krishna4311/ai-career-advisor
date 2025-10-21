@@ -11,7 +11,7 @@ if not GEMINI_API_KEY:
     raise ValueError("GEMINI_API_KEY not found. Please set it in the .env file.")
 
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('models/gemini-1.5-flash-latest')
+model = genai.GenerativeModel('models/gemini-flash-latest')
 
 def _parse_json_from_text(text: str) -> dict:
     """Safely extracts a JSON object from a string."""
@@ -35,7 +35,10 @@ def analyze_skills_for_job(skills: list[str], job_title: str) -> dict:
     """
     try:
         response = model.generate_content(prompt, generation_config=genai.types.GenerationConfig(temperature=0.2))
-        return _parse_json_from_text(response.text)
+        print(f"Gemini API raw response (analyze_skills_for_job): {response.text}")
+        parsed_json = _parse_json_from_text(response.text)
+        print(f"Parsed JSON (analyze_skills_for_job): {parsed_json}")
+        return parsed_json
     except Exception as e:
         print(f"Agent Error (analyze_skills_for_job): {e}")
         return {"matching_skills": [], "missing_skills": []}

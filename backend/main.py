@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import firebase_admin
@@ -7,14 +7,14 @@ import os
 import json
 import uuid
 
-# Import all schemas
+# schemas
 from schemas import (
     SkillAnalysisRequest, SkillAnalysisResponse, 
     JobSuggestionResponse, FeedbackRequest,
     SkillRequirementsRequest, SkillRequirementsResponse,
     CareerPathRequest, CareerPathResponse
 )
-# Import all agent functions
+# agent functions
 from agent import (
     analyze_skills_for_job, get_job_suggestions, 
     get_skills_for_job, generate_career_path,
@@ -22,23 +22,21 @@ from agent import (
     parse_resume_structure,
     extract_skills_from_structured_data
 )
-# Import other services
+# services
 from resume_parser import parse_resume
 from database import save_user_skills, save_feedback
 from auth import router as auth_router
+from auth_utils import get_current_user
 
-# --- Firebase Admin SDK Initialization ---
 if not firebase_admin._apps:
     service_account_json_str = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
-    cred = None # Initialize cred to None
+    cred = None
 
     if service_account_json_str:
-        # If the environment variable IS set (like in Cloud Run), use it
         print("Initializing Firebase Admin SDK from environment variable.")
         service_account_info = json.loads(service_account_json_str)
         cred = credentials.Certificate(service_account_info)
     else:
-        # If the environment variable IS NOT set (like during local dev), try the local file
         print("Initializing Firebase Admin SDK from local file 'serviceAccountKey.json'.")
         try:
             cred = credentials.Certificate("serviceAccountKey.json")
@@ -47,7 +45,6 @@ if not firebase_admin._apps:
         except Exception as e:
             print(f"\n!!! ERROR: Failed to load serviceAccountKey.json: {e} !!!\n")
 
-    # Initialize the app only if credentials were successfully loaded
     if cred:
         try:
             firebase_admin.initialize_app(cred)
@@ -67,7 +64,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# authentication router for signup/login
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 
 
@@ -87,21 +83,20 @@ async def get_detailed_skills(request: SkillRequirementsRequest):
     return SkillRequirementsResponse(**result_dict)
 
 # --- V2 PUBLIC ENDPOINTS ---
-@app.post("/api/suggest-jobs", response_model=JobSuggestionResponse, tags=["V2 Features"])
-async def suggest_jobs(resume_file: UploadFile = File(None), skills: str = Form(None)):
-    user_id = str(uuid.uuid4()) # Placeholder user ID for this public feature
+@app.post("/api/suggest-jobs", response_model=JobSuggestionResponse, tags=["V2 Features - Protected"]) # Changed tag
+async def suggest_jobs(
+    resume_file: UploadFile = File(None), 
+    skills: str = Form(None), 
+    current_user: dict = Depends(get_current_user) # <-- ADD THIS DEPENDENCY
+):
+    user_id = current_user['uid'] # <-- USE THE REAL UID FROM TOKEN
+    
     content_for_agent = ""
     skills_to_save = []
+    
     if resume_file:
         resume_text = await parse_resume(resume_file)
-        structured_resume = parse_resume_structure(resume_text)
-        extracted_skills = extract_skills_from_structured_data(structured_resume)
-        
-        # Fallback to basic text splitting if AI fails
-        if not extracted_skills:
-            print("AI skill extraction failed. Falling back to basic text parsing.")
-            extracted_skills = [s.strip() for s in resume_text.split('\n') if s.strip()]
-
+        extracted_skills = [s.strip() for s in resume_text.split('\n') if len(s.strip()) > 1] 
         content_for_agent = ", ".join(extracted_skills)
         skills_to_save = extracted_skills
     elif skills:
@@ -110,9 +105,9 @@ async def suggest_jobs(resume_file: UploadFile = File(None), skills: str = Form(
     else:
         raise HTTPException(status_code=400, detail="Please provide either a resume or skills.")
     
-    save_user_skills(user_id=user_id, skills=skills_to_save)
-    suggestions_result = get_job_suggestions(content_for_agent)
+    save_user_skills(user_id=user_id, skills=skills_to_save) 
     
+    suggestions_result = await get_job_suggestions(content_for_agent)
     suggestions_result['parsed_skills'] = skills_to_save
     
     return suggestions_result

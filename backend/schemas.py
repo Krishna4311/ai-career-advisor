@@ -23,8 +23,7 @@ class JobSuggestionResponse(BaseModel):
 class FeedbackRequest(BaseModel):
     suggestion_id: str
     job_title: str
-    user_id: str
-    rating: str # e.g., "helpful" or "not_helpful"
+    rating: str 
 
 # --- V3 Schemas: Detailed Skills ---
 class SkillRequirementsRequest(BaseModel):

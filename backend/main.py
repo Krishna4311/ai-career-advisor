@@ -68,22 +68,30 @@ app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 
 
 # --- API ENDPOINTS ---
-# --- V3 PUBLIC ENDPOINTS ---
-@app.post("/api/generate-path", response_model=CareerPathResponse, tags=["V3 Features"])
-async def generate_career_path_endpoint(request: CareerPathRequest):
+# --- V3 PROTECTED ENDPOINTS ---
+@app.post("/api/generate-path", response_model=CareerPathResponse, tags=["V3 Features - Protected"])
+async def generate_career_path_endpoint(
+    request: CareerPathRequest, 
+    current_user: dict = Depends(get_current_user) 
+):
+    user_id = current_user['uid']
     result_dict = generate_career_path(
-        current_skills=request.current_skills, 
+        current_skills=request.current_skills,
         target_job=request.target_job
     )
     return CareerPathResponse(**result_dict)
 
-@app.post("/api/get-skills-for-job", response_model=SkillRequirementsResponse, tags=["V3 Features"])
-async def get_detailed_skills(request: SkillRequirementsRequest):
+@app.post("/api/get-skills-for-job", response_model=SkillRequirementsResponse, tags=["V3 Features - Protected"])
+async def get_detailed_skills(
+    request: SkillRequirementsRequest,
+    current_user: dict = Depends(get_current_user) 
+):
+    user_id = current_user['uid'] 
     result_dict = get_skills_for_job(job_title=request.job_title)
     return SkillRequirementsResponse(**result_dict)
 
 @app.post("/api/save-path", tags=["V3 Features - Protected"])
-async def save_path(request: SavePathRequest, current_user: dict = Depends(get_current_user)): # <-- ADDED Depends
+async def save_path(request: SavePathRequest, current_user: dict = Depends(get_current_user)):
     user_id = current_user['uid']
     save_career_path(
         user_id=user_id,
@@ -99,13 +107,13 @@ async def get_my_paths(current_user: dict = Depends(get_current_user)):
     return {"paths": paths}
 
 # --- V2 PUBLIC ENDPOINTS ---
-@app.post("/api/suggest-jobs", response_model=JobSuggestionResponse, tags=["V2 Features - Protected"]) # Changed tag
+@app.post("/api/suggest-jobs", response_model=JobSuggestionResponse, tags=["V2 Features - Protected"]) 
 async def suggest_jobs(
     resume_file: UploadFile = File(None), 
     skills: str = Form(None), 
-    current_user: dict = Depends(get_current_user) # <-- ADD THIS DEPENDENCY
+    current_user: dict = Depends(get_current_user) 
 ):
-    user_id = current_user['uid'] # <-- USE THE REAL UID FROM TOKEN
+    user_id = current_user['uid']
     
     content_for_agent = ""
     skills_to_save = []
@@ -128,19 +136,28 @@ async def suggest_jobs(
     
     return suggestions_result
 
-@app.post("/api/feedback", tags=["V2 Features"])
-async def handle_feedback(request: FeedbackRequest):
+@app.post("/api/feedback", tags=["V2 Features - Protected"]) 
+async def handle_feedback(
+    request: FeedbackRequest,
+    current_user: dict = Depends(get_current_user) 
+):
+    user_id = current_user['uid'] 
+
     save_feedback(
         suggestion_id=request.suggestion_id,
         job_title=request.job_title,
-        user_id=request.user_id,
+        user_id=user_id,
         rating=request.rating
     )
     return {"status": "success", "message": "Feedback received"}
 
-# --- V1 PUBLIC ENDPOINT ---
-@app.post("/api/analyze", response_model=SkillAnalysisResponse, tags=["V1 Features"])
-async def analyze_skills(request: SkillAnalysisRequest):
+# --- V1 PROTECTED ENDPOINT ---
+@app.post("/api/analyze", response_model=SkillAnalysisResponse, tags=["V1 Features - Protected"])
+async def analyze_skills(
+    request: SkillAnalysisRequest,
+    current_user: dict = Depends(get_current_user) 
+):
+    user_id = current_user['uid'] 
     result_dict = analyze_skills_for_job(skills=request.skills, job_title=request.job_title)
     return SkillAnalysisResponse(**result_dict)
 

@@ -1,6 +1,6 @@
 import os
 from google.cloud import firestore
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 # --- Firestore Client Initialization ---
 try:
@@ -93,3 +93,59 @@ def get_saved_paths(user_id: str) -> list:
     except Exception as e:
         print(f"Error retrieving paths for user {user_id}: {e}")
     return paths_list
+
+# --- Caching Functions ---
+
+def get_cached_job_skills(job_title: str) -> dict | None:
+    """
+    Checks the cache for a job title's skills.
+    Returns the data if found and not older than 30 days.
+    """
+    if not db:
+        print("Database client not available. Skipping cache check.")
+        return None
+
+    try:
+        doc_id = job_title.lower().replace(" ", "_")
+        cache_ref = db.collection('job_skills_cache').document(doc_id)
+        
+        doc = cache_ref.get()
+        if not doc.exists:
+            print(f"CACHE MISS for job: {job_title}")
+            return None
+
+        data = doc.to_dict()
+        cached_at = data.get('cached_at', datetime.now(timezone.utc))
+
+        if datetime.now(timezone.utc) - cached_at > timedelta(days=30):
+            print(f"CACHE STALE for job: {job_title}")
+            return None
+
+        print(f"CACHE HIT for job: {job_title}")
+        return data.get('skills_data')
+
+    except Exception as e:
+        print(f"Error getting cached skills for {job_title}: {e}")
+        return None
+
+
+def cache_job_skills(job_title: str, skills_data: dict):
+    """Saves a job's skill data to the Firestore cache."""
+    if not db:
+        print("Database client not available. Cannot save to cache.")
+        return
+
+    try:
+        doc_id = job_title.lower().replace(" ", "_")
+        cache_ref = db.collection('job_skills_cache').document(doc_id)
+        
+        cache_data = {
+            'job_title': job_title,
+            'skills_data': skills_data, 
+            'cached_at': datetime.now(timezone.utc)
+        }
+        cache_ref.set(cache_data)
+        print(f"CACHE SAVED for job: {job_title}")
+
+    except Exception as e:
+        print(f"Error saving skills to cache for {job_title}: {e}")

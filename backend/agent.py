@@ -3,6 +3,8 @@ import json
 import uuid
 from dotenv import load_dotenv
 import google.generativeai as genai
+from google.generativeai.types import GenerationConfig
+from database import get_cached_job_skills, cache_job_skills
 
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -13,16 +15,20 @@ if not GEMINI_API_KEY:
 genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel('models/gemini-flash-latest')
 
-def _parse_json_from_text(text: str) -> dict:
-    """Safely extracts a JSON object from a string."""
-    try:
-        json_start = text.find('{')
-        json_end = text.rfind('}') + 1
-        if json_start != -1 and json_end != -1:
-            return json.loads(text[json_start:json_end])
-    except (json.JSONDecodeError, IndexError):
-        pass
-    return {}
+# ---  Generation Configs ---
+JSON_CONFIG = GenerationConfig(
+    temperature=0.2,
+    response_mime_type="application/json"
+)
+
+SKILL_CONFIG = GenerationConfig(
+    temperature=0.0
+)
+
+CREATIVE_JSON_CONFIG = GenerationConfig(
+    temperature=0.5,
+    response_mime_type="application/json"
+)
 
 def analyze_skills_for_job(skills: list[str], job_title: str) -> dict:
     """Analyzes skills for a job."""
@@ -34,9 +40,8 @@ def analyze_skills_for_job(skills: list[str], job_title: str) -> dict:
     Return a JSON object with two keys: "matching_skills" and "missing_skills".
     """
     try:
-        response = model.generate_content(prompt, generation_config=genai.types.GenerationConfig(temperature=0.2))
-        print(f"Gemini API raw response (analyze_skills_for_job): {response.text}")
-        parsed_json = _parse_json_from_text(response.text)
+        response = model.generate_content(prompt, generation_config=JSON_CONFIG)
+        parsed_json = json.loads(response.text)
         print(f"Parsed JSON (analyze_skills_for_job): {parsed_json}")
         return parsed_json
     except Exception as e:
@@ -56,8 +61,8 @@ def get_job_suggestions(resume_text: str) -> dict:
     Return a JSON object with a single key "suggestions", which is a list of objects. Each object should have two keys: "job_title" (string) and "match_score" (an integer between 0 and 100).
     """
     try:
-        response = model.generate_content(prompt, generation_config=genai.types.GenerationConfig(temperature=0.5))
-        suggestions_data = _parse_json_from_text(response.text)
+        response = model.generate_content(prompt, generation_config=CREATIVE_JSON_CONFIG)
+        suggestions_data = json.loads(response.text) 
         for suggestion in suggestions_data.get("suggestions", []):
             suggestion["suggestion_id"] = str(uuid.uuid4())
         return suggestions_data
@@ -66,9 +71,15 @@ def get_job_suggestions(resume_text: str) -> dict:
         return {"suggestions": []}
 
 def get_skills_for_job(job_title: str) -> dict:
-    """Gets skills for a job."""
+    """
+    Gets skills for a job, using a cache to avoid redundant API calls.
+    """
     
-    # This is the original, non-cached version
+    cached_skills = get_cached_job_skills(job_title)
+    if cached_skills:
+        return cached_skills
+
+    print(f"Calling Gemini API for job: {job_title}")
     prompt = f"""
     You are a job market analyst. What are the technical, soft,
     and tool skills for a '{job_title}'?
@@ -79,10 +90,14 @@ def get_skills_for_job(job_title: str) -> dict:
     """
 
     try:
-        response = model.generate_content(prompt,
-            generation_config=genai.types.GenerationConfig(temperature=0.2))
+        response = model.generate_content(prompt, generation_config=JSON_CONFIG)
         
-        return _parse_json_from_text(response.text)
+        skills_data = json.loads(response.text)
+
+        if skills_data: 
+            cache_job_skills(job_title, skills_data)
+
+        return skills_data
 
     except Exception as e:
         print(f"Agent Error (get_skills_for_job): {e}")
@@ -104,14 +119,20 @@ def generate_career_path(current_skills: list[str], target_job: str) -> dict:
     }}
     """
     try:
-        response = model.generate_content(prompt, generation_config=genai.types.GenerationConfig(temperature=0.5))
-        return _parse_json_from_text(response.text)
+        response = model.generate_content(prompt, generation_config=CREATIVE_JSON_CONFIG)
+        return json.loads(response.text) # Direct parsing
     except Exception as e:
         print(f"Agent Error (generate_career_path): {e}")
         return {"milestones": [], "next_skills": [], "recommended_actions": []}
 
 def extract_skills_from_text(text: str) -> list[str]:
-    """Extracts skills from text."""
+    """
+    Extracts skills from any block of text.
+    This function replaces the duplicated skill extractors.
+    """
+    if not text or text.isspace():
+        return []
+        
     prompt = f"""
     You are an expert skill extractor. From the following text, extract a clean list of all technical and soft skills.
 
@@ -125,8 +146,8 @@ def extract_skills_from_text(text: str) -> list[str]:
     Example Response: Python, React, SQL, Teamwork, Communication, Git, Docker
     """
     try:
-        response = model.generate_content(prompt, generation_config=genai.types.GenerationConfig(temperature=0.0))
-        return [s.strip() for s in response.text.strip().split(',')]
+        response = model.generate_content(prompt, generation_config=SKILL_CONFIG)
+        return [s.strip() for s in response.text.strip().split(',') if s.strip()]
     except Exception as e:
         print(f"Agent Error (extract_skills_from_text): {e}")
         return []
@@ -149,34 +170,21 @@ def parse_resume_structure(resume_text: str) -> dict:
     """
     print("Agent: Calling Gemini for Step 1 - Resume Structuring...")
     try:
-        response = model.generate_content(prompt, generation_config=genai.types.GenerationConfig(temperature=0.0))
-        return _parse_json_from_text(response.text)
+        response = model.generate_content(prompt, generation_config=JSON_CONFIG)
+        return json.loads(response.text) 
     except Exception as e:
         print(f"Agent Error (Step 1): {e}")
-        return {{}}
+        return {}
 
 def extract_skills_from_structured_data(resume_json: dict) -> list[str]:
-    """Step 2: Extracts skills from the structured JSON resume data."""
-    skills_section = resume_json.get("skills", "")
-    experience_section = resume_json.get("experience", "")
-    combined_text = f"Skills Section: {skills_section}\nExperience Section: {experience_section}"
-
-    prompt = f"""
-    You are an expert skill extractor. From the following text, extract a clean list of all technical and soft skills.
-
-    Your response MUST be a single line of comma-separated values.
-
-    Text to Analyze:
-    ---
-    {combined_text}
-    ---
-
-    Example Response: Python, React, SQL, Teamwork, Communication, Git, Docker
+    """
+    Step 2: Extracts skills from the structured JSON resume data.
+    This now calls the single, consolidated skill extractor function.
     """
     print("Agent: Calling Gemini for Step 2 - Skill Extraction...")
-    try:
-        response = model.generate_content(prompt, generation_config=genai.types.GenerationConfig(temperature=0.0))
-        return [s.strip() for s in response.text.strip().split(',')]
-    except Exception as e:
-        print(f"Agent Error (Step 2): {e}")
-        return []
+    skills_section = resume_json.get("skills", "")
+    experience_section = resume_json.get("experience", "")
+    
+    combined_text = f"Skills Section: {str(skills_section)}\nExperience Section: {str(experience_section)}"
+    
+    return extract_skills_from_text(combined_text)

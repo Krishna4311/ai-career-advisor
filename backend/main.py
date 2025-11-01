@@ -12,7 +12,7 @@ from schemas import (
     SkillAnalysisRequest, SkillAnalysisResponse, 
     JobSuggestionResponse, FeedbackRequest,
     SkillRequirementsRequest, SkillRequirementsResponse,
-    CareerPathRequest, CareerPathResponse
+    CareerPathRequest, CareerPathResponse, SavePathRequest
 )
 # agent functions
 from agent import (
@@ -24,9 +24,9 @@ from agent import (
 )
 # services
 from resume_parser import parse_resume
-from database import save_user_skills, save_feedback
-from auth import router as auth_router
+from database import save_user_skills, save_feedback, save_career_path, get_saved_paths
 from auth_utils import get_current_user
+from auth import router as auth_router
 
 if not firebase_admin._apps:
     service_account_json_str = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
@@ -81,6 +81,22 @@ async def generate_career_path_endpoint(request: CareerPathRequest):
 async def get_detailed_skills(request: SkillRequirementsRequest):
     result_dict = get_skills_for_job(job_title=request.job_title)
     return SkillRequirementsResponse(**result_dict)
+
+@app.post("/api/save-path", tags=["V3 Features - Protected"])
+async def save_path(request: SavePathRequest, current_user: dict = Depends(get_current_user)): # <-- ADDED Depends
+    user_id = current_user['uid']
+    save_career_path(
+        user_id=user_id,
+        target_job=request.target_job,
+        path_data=request.path_data.dict()
+    )
+    return {"status": "success", "message": "Path saved successfully."}
+
+@app.get("/api/my-paths", tags=["V3 Features - Protected"])
+async def get_my_paths(current_user: dict = Depends(get_current_user)):
+    user_id = current_user['uid']
+    paths = get_saved_paths(user_id=user_id)
+    return {"paths": paths}
 
 # --- V2 PUBLIC ENDPOINTS ---
 @app.post("/api/suggest-jobs", response_model=JobSuggestionResponse, tags=["V2 Features - Protected"]) # Changed tag

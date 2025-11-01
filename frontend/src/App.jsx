@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import ProfilePage from './pages/ProfilePage';
 import Footer from './components/Footer';
 import './App.css';
 

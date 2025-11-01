@@ -44,3 +44,7 @@ class CareerPathResponse(BaseModel):
     next_skills: List[str]
     milestones: List[str]
     recommended_actions: List[str]
+
+class SavePathRequest(BaseModel):
+    target_job: str
+    path_data: CareerPathResponse

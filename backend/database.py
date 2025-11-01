@@ -45,7 +45,6 @@ def save_feedback(suggestion_id: str, job_title: str, user_id: str, rating: str)
         print("Database client not available. Cannot save feedback.")
         return
         
-    # We'll use the suggestion_id as the document ID for simplicity
     feedback_ref = db.collection('feedback').document(suggestion_id)
     feedback_data = {
         'suggestion_id': suggestion_id,
@@ -59,3 +58,38 @@ def save_feedback(suggestion_id: str, job_title: str, user_id: str, rating: str)
         print(f"Successfully saved feedback for suggestion: {suggestion_id}")
     except Exception as e:
         print(f"Error saving feedback for suggestion {suggestion_id}: {e}")
+
+def save_career_path(user_id: str, target_job: str, path_data: dict):
+    """Saves a generated career path to the user's profile."""
+    if not db:
+        print("Database client not available. Cannot save path.")
+        return
+
+    path_ref = db.collection('saved_paths').document() 
+    full_path_data = {
+        'userId': user_id,
+        'target_job': target_job,
+        'path_data': path_data, 
+        'saved_at': datetime.now(timezone.utc) 
+    }
+    try:
+        path_ref.set(full_path_data)
+        print(f"Successfully saved path for user: {user_id}")
+    except Exception as e:
+        print(f"Error saving path for user {user_id}: {e}")
+
+def get_saved_paths(user_id: str) -> list:
+    """Retrieves all saved career paths for a given user."""
+    if not db:
+        print("Database client not available. Cannot retrieve paths.")
+        return []
+
+    paths_list = []
+    try:
+        docs = db.collection('saved_paths').where('userId', '==', user_id).stream()
+        for doc in docs:
+            paths_list.append(doc.to_dict())
+        print(f"Found {len(paths_list)} paths for user {user_id}")
+    except Exception as e:
+        print(f"Error retrieving paths for user {user_id}: {e}")
+    return paths_list

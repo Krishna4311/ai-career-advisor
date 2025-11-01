@@ -26,7 +26,7 @@ from agent import (
 from resume_parser import parse_resume
 from database import save_user_skills, save_feedback, save_career_path, get_saved_paths
 from auth_utils import get_current_user
-from auth import router as auth_router
+from auth_routes import router as auth_router
 
 if not firebase_admin._apps:
     service_account_json_str = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
@@ -121,17 +121,16 @@ async def suggest_jobs(
     if resume_file:
         resume_text = await parse_resume(resume_file)
         extracted_skills = [s.strip() for s in resume_text.split('\n') if len(s.strip()) > 1] 
-        content_for_agent = ", ".join(extracted_skills)
         skills_to_save = extracted_skills
+        suggestions_result = await get_job_suggestions(resume_text)
     elif skills:
         content_for_agent = skills
         skills_to_save = [s.strip() for s in skills.split(',')]
+        suggestions_result = await get_job_suggestions(content_for_agent)
     else:
         raise HTTPException(status_code=400, detail="Please provide either a resume or skills.")
     
     save_user_skills(user_id=user_id, skills=skills_to_save) 
-    
-    suggestions_result = await get_job_suggestions(content_for_agent)
     suggestions_result['parsed_skills'] = skills_to_save
     
     return suggestions_result
@@ -160,5 +159,3 @@ async def analyze_skills(
     user_id = current_user['uid'] 
     result_dict = analyze_skills_for_job(skills=request.skills, job_title=request.job_title)
     return SkillAnalysisResponse(**result_dict)
-
-

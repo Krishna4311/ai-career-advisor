@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { useAuth } from '../AuthContext'; // <-- Import useAuth
+import { useAuth } from '../AuthContext'; 
 import Tabs from '../components/Tabs';
 import SkillForm from '../components/SkillForm';
 import JobSuggestions from '../components/JobSuggestions';
 import SkillGapResults from '../components/SkillGapResults';
 import CareerPathDisplay from '../components/CareerPathDisplay';
-import LoadingSpinner from '../components/LoadingSpinner'; // Assuming you have this component
-import { API_URL } from "../api/config"; // Assuming API_URL comes from here or is ""
+import LoadingSpinner from '../components/LoadingSpinner'; 
+import { API_URL } from "../api/config"; 
 
 function HomePage() {
-  const { currentUser } = useAuth(); // <-- Get currentUser
+  const { currentUser } = useAuth(); 
   const [activeTab, setActiveTab] = useState('jobSuggestions');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -40,15 +40,22 @@ function HomePage() {
     setActiveTab(tab);
   };
 
-  // --- V1 API Handler (Skill Gap - Public) ---
+  // --- V1 API Handler (Skill Gap - NOW Protected) ---
   const handleV1Submit = async (event) => {
     event.preventDefault();
+    if (!currentUser) return setError("Please log in to analyze your skills."); // <-- Check login
     setIsLoading(true);
     clearResultsAndErrors();
+
     try {
+      const token = await currentUser.getIdToken(); 
+
       const response = await fetch(`${API_URL}/api/analyze`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
         body: JSON.stringify({
           skills: v1Skills.split(',').map(s => s.trim()),
           job_title: v1JobTitle,
@@ -72,19 +79,19 @@ function HomePage() {
   // --- V2 API Handler (Job Suggestions - Protected) ---
   const handleV2Submit = async () => {
     if (!resumeFile) return setError("Please select a resume file.");
-    if (!currentUser) return setError("Please log in to suggest jobs."); // Check login
+    if (!currentUser) return setError("Please log in to suggest jobs."); 
     setIsLoading(true);
     clearResultsAndErrors();
     const formData = new FormData();
     formData.append("resume_file", resumeFile);
 
     try {
-      const token = await currentUser.getIdToken(); // <-- Get the token
+      const token = await currentUser.getIdToken(); 
 
       const response = await fetch(`${API_URL}/api/suggest-jobs`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}` // <-- Add Authorization header
+          'Authorization': `Bearer ${token}` 
         },
         body: formData,
       });
@@ -103,15 +110,22 @@ function HomePage() {
     }
   };
 
-  // --- V3 API Handler (Career Path - Public) ---
+  // --- V3 API Handler (Career Path - NOW Protected) ---
   const handleV3Submit = async (event) => {
     event.preventDefault();
+    if (!currentUser) return setError("Please log in to generate a career path."); // <-- Check login
     setIsLoading(true);
     clearResultsAndErrors();
+
     try {
+      const token = await currentUser.getIdToken(); // <-- Get token
+
       const response = await fetch(`${API_URL}/api/generate-path`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
         body: JSON.stringify({
           current_skills: v3Skills.split(',').map(s => s.trim()),
           target_job: v3TargetJob,
@@ -132,9 +146,10 @@ function HomePage() {
     }
   };
 
-  // --- V2 -> V3 Workflow ---
-  // (This function remains the same as it calls the public /api/generate-path)
+  // --- V2 -> V3 Workflow (NOW Protected) ---
   const handleSuggestionAnalysis = async (jobTitle, skillsForAnalysis) => {
+    if (!currentUser) return setError("Please log in to analyze a career path."); // <-- Check login
+    
     const skillsPayload = Array.isArray(skillsForAnalysis) ? skillsForAnalysis : [];
     if (skillsPayload.length === 0) {
       setError("Could not find skills from the resume to perform the analysis.");
@@ -145,9 +160,14 @@ function HomePage() {
     setV3TargetJob(jobTitle);
 
     try {
+      const token = await currentUser.getIdToken(); 
+
       const pathResponse = await fetch(`${API_URL}/api/generate-path`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // <-- Add token
+        },
         body: JSON.stringify({ current_skills: skillsPayload, target_job: jobTitle }),
       });
       if (!pathResponse.ok) throw new Error('Career path generation failed.');
@@ -219,11 +239,9 @@ function HomePage() {
       {/* Render Results */}
       {v3Result && activeTab === 'careerPath' && !isLoading &&
         <CareerPathDisplay pathData={v3Result} targetJob={v3TargetJob} />
-        /* Note: apiUrl prop removed, get token from context inside component */
       }
       {v2Result && activeTab === 'jobSuggestions' && !isLoading &&
-        <JobSuggestions suggestions={v2Result.suggestions} parsedSkills={v2Result.parsed_skills} onAnalysis={handleSuggestionAnalysis} />
-        /* Note: apiUrl prop removed */
+        <JobSuggestions v2Result={v2Result} onAnalysis={handleSuggestionAnalysis} />
       }
       {v1Result && activeTab === 'gapAnalysis' && !isLoading &&
         <SkillGapResults result={v1Result} />

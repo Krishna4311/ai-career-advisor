@@ -18,7 +18,7 @@ from schemas import (
 from agent import (
     analyze_skills_for_job, get_job_suggestions, 
     get_skills_for_job, generate_career_path,
-    extract_skills_from_text, normalize_input,
+    extract_skills_from_text,
     parse_resume_structure,
     extract_skills_from_structured_data
 )
@@ -162,5 +162,3 @@ async def analyze_skills(
     return SkillAnalysisResponse(**result_dict)
 
 
-# --- SERVE FRONTEND ---
-app.mount("/", StaticFiles(directory="dist", html=True), name="static")

@@ -152,10 +152,6 @@ def extract_skills_from_text(text: str) -> list[str]:
         print(f"Agent Error (extract_skills_from_text): {e}")
         return []
 
-def normalize_input(text: str) -> str:
-    """Normalizes input text."""
-    return text
-
 def parse_resume_structure(resume_text: str) -> dict:
     """Step 1: Parses raw resume text into a structured JSON."""
     prompt = f"""

@@ -1,21 +1,19 @@
+// frontend/src/pages/LoginPage.jsx
 import React, { useRef } from 'react';
 import { useAuth } from '../AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { auth, provider } from '../firebase'; 
-import { signInWithPopup } from 'firebase/auth';
-import { API_URL } from '../api/config'; 
 
 export default function LoginPage() {
   const emailRef = useRef();
   const passwordRef = useRef();
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
   const navigate = useNavigate();
 
   async function handleSubmit(e) {
     e.preventDefault();
     try {
       await login(emailRef.current.value, passwordRef.current.value);
-      navigate("/"); 
+      navigate("/");
     } catch {
       alert("Failed to log in. Please check your email and password.");
     }
@@ -23,27 +21,11 @@ export default function LoginPage() {
 
   async function handleGoogleSignIn() {
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      const idToken = await user.getIdToken(); 
-
-      const response = await fetch(`${API_URL}/auth/google-login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ idToken }),
-      });
-
-      if (!response.ok) throw new Error('Backend verification failed.');
-      
-      const data = await response.json();
-      console.log("Backend verified user:", data);
-
-      navigate("/"); // Redirect to home after login
+      await googleLogin();
+      navigate("/"); 
     } catch (error) {
       console.error("Google sign-in error:", error);
-      alert("Failed to sign in with Google.");
+      alert(error.message);
     }
   }
 
@@ -61,10 +43,10 @@ export default function LoginPage() {
         </div>
         <button className="analyze-button" type="submit">Log In</button>
       </form>
-      
-      <button 
-        className="secondary-button" 
-        onClick={handleGoogleSignIn} 
+
+      <button
+        className="secondary-button"
+        onClick={handleGoogleSignIn}
         style={{ width: '100%', maxWidth: '400px', marginTop: '1rem' }}
       >
         Sign In with Google

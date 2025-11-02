@@ -37,4 +37,4 @@ def _parse_docx(content: bytes) -> str:
         return text
     except Exception as e:
         print(f"!!! CRITICAL ERROR: python-docx failed to parse DOCX: {e} !!!")
-        raise HTTPException(status_code=4.22, detail="Failed to parse .docx file. The file may be corrupt.")
+        raise HTTPException(status_code=422, detail="Failed to parse .docx file. The file may be corrupt.")

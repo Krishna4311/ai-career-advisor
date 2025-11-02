@@ -1,9 +1,9 @@
 import React from 'react';
-import { useAuth } from '../AuthContext'; 
+import { useAuth } from '../AuthContext';
 import './CareerPathDisplay.css';
 import { API_URL } from "../api/config";
 
-function CareerPathDisplay({ pathData, targetJob }) {
+function CareerPathDisplay({ pathData, targetJob, showSaveButton = true }) {
   const { currentUser } = useAuth();
 
   const handleSavePath = async () => {
@@ -13,17 +13,17 @@ function CareerPathDisplay({ pathData, targetJob }) {
     }
 
     try {
-      const token = await currentUser.getIdToken(); 
+      const token = await currentUser.getIdToken();
 
       const response = await fetch(`${API_URL}/api/save-path`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           target_job: targetJob,
-          path_data: pathData, 
+          path_data: pathData,
         }),
       });
 
@@ -44,7 +44,7 @@ function CareerPathDisplay({ pathData, targetJob }) {
     <div className="path-container">
       <div className="path-header">
         <h2>Your Generated Career Path to "{targetJob}"</h2>
-        {currentUser && (
+        {currentUser && showSaveButton && (
           <button className="save-button" onClick={handleSavePath}>
             Save this Path
           </button>

@@ -46,45 +46,84 @@ function SavedPathsSidebar({ isOpen, onClose }) {
     setSelectedPath(null);
   };
 
-  // Don't render anything if not open
+  const handleDeletePath = async (pathId) => {
+    if (!currentUser || !pathId) return;
+
+    if (!window.confirm("Are you sure you want to delete this career path? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      const token = await currentUser.getIdToken();
+      const response = await fetch(`${API_URL}/api/my-paths/${pathId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.detail || "Failed to delete path.");
+      }
+
+      // On success, update UI
+      setSavedPaths(prevPaths => prevPaths.filter(p => p.path_id !== pathId));
+      handleReturnToList(); // Go back to the list
+
+    } catch (err) {
+      console.error("Delete path error:", err);
+      setError(err.message); // Show error in the sidebar
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
-    // Overlay covers the whole screen
     <div className="sidebar-overlay" onClick={onClose}>
-      {/* Content stops click propagation */}
       <div className="sidebar-content" onClick={(e) => e.stopPropagation()}>
         <button className="sidebar-close-button" onClick={onClose}>&times;</button>
-        
-        {/* VIEW 1: Full Screen Path Display */}
+
         {selectedPath ? (
           <div className="sidebar-fullscreen-view">
-            <button className="sidebar-return-button" onClick={handleReturnToList}>
-              &larr; Return to List
-            </button>
-            {/* We re-use the component you already built */}
-            <CareerPathDisplay 
-              pathData={selectedPath.path_data} 
-              targetJob={selectedPath.target_job} 
+            {/* --- MODIFICATION 2: Add header container --- */}
+            <div className="sidebar-view-header">
+              <button className="sidebar-return-button" onClick={handleReturnToList}>
+                &larr; Return to List
+              </button>
+              {/* --- MODIFICATION 3: Add Delete Button --- */}
+              <button
+                className="sidebar-delete-button"
+                onClick={() => handleDeletePath(selectedPath.path_id)}
+              >
+                Delete Path
+              </button>
+            </div>
+
+            <CareerPathDisplay
+              pathData={selectedPath.path_data}
+              targetJob={selectedPath.target_job}
+              showSaveButton={false} // <-- MODIFICATION 4: Hide save button
             />
           </div>
-        
-        /* VIEW 2: List of Saved Paths */
         ) : (
           <div className="sidebar-list-view">
             <h2>My Saved Paths</h2>
             {isLoading && <LoadingSpinner message="Loading..." />}
             {error && <p className="error-message">{error}</p>}
-            
+
             {!isLoading && !error && savedPaths.length === 0 && (
               <p>You haven't saved any career paths yet.</p>
             )}
 
             {!isLoading && !error && savedPaths.length > 0 && (
               <ul className="saved-paths-list">
-                {savedPaths.map((path, index) => (
-                  // We need to handle potential missing data safely
-                  <li key={index} className="saved-path-item" onClick={() => handleSelectPath(path)}>
+                {savedPaths.map((path) => (
+                  <li
+                    key={path.path_id} // <-- MODIFICATION 5: Use path_id as key
+                    className="saved-path-item"
+                    onClick={() => handleSelectPath(path)}
+                  >
                     <span className="saved-path-job">{path.target_job || 'Saved Path'}</span>
                     <span className="saved-path-skills">
                       {(path.path_data?.next_skills || []).slice(0, 3).join(', ') + '...'}

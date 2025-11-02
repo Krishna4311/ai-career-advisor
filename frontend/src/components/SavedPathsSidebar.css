@@ -121,3 +121,33 @@
 .sidebar-fullscreen-view .path-columns {
   grid-template-columns: 1fr; /* Stack columns */
 }
+
+.sidebar-view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: 0.5rem;
+}
+
+.sidebar-return-button {
+  margin-bottom: 0; /* Remove margin, handled by header */
+}
+
+/* NEW: Style for the delete button */
+.sidebar-delete-button {
+  background: transparent;
+  border: 1px solid #d93025; /* Google Red */
+  color: #d93025;
+  padding: 0.5rem 1rem;
+  font-size: 0.9em;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sidebar-delete-button:hover {
+  background-color: #fce8e6; /* Light red hover */
+}

@@ -88,13 +88,39 @@ def get_saved_paths(user_id: str) -> list:
     try:
         docs = db.collection('saved_paths').where('userId', '==', user_id).stream()
         for doc in docs:
-            paths_list.append(doc.to_dict())
+            path_data = doc.to_dict()
+            path_data['path_id'] = doc.id
+            paths_list.append(path_data)
         print(f"Found {len(paths_list)} paths for user {user_id}")
     except Exception as e:
         print(f"Error retrieving paths for user {user_id}: {e}")
     return paths_list
 
-# --- Caching Functions ---
+def delete_saved_path(user_id: str, path_id: str):
+    """Deletes a specific saved path, verifying user ownership."""
+    if not db:
+        print("Database client not available. Cannot delete path.")
+        raise Exception("Database client not available.")
+
+    path_ref = db.collection('saved_paths').document(path_id)
+    
+    try:
+        doc = path_ref.get()
+        if not doc.exists:
+            print(f"Path {path_id} not found. Cannot delete.")
+            raise Exception("Path not found.")
+        
+        path_data = doc.to_dict()
+        if path_data.get('userId') != user_id:
+            print(f"User {user_id} does not own path {path_id}. Deletion forbidden.")
+            raise Exception("User does not have permission to delete this path.")
+
+        path_ref.delete()
+        print(f"Successfully deleted path {path_id} for user {user_id}")
+    
+    except Exception as e:
+        print(f"Error deleting path {path_id} for user {user_id}: {e}")
+        raise e 
 
 def get_cached_job_skills(job_title: str) -> dict | None:
     """

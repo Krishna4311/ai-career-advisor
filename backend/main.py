@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form, Depends
 from fastapi.middleware.cors import CORSMiddleware
 import firebase_admin
 from firebase_admin import credentials
@@ -19,7 +19,7 @@ from agent import (
 )
 # Services
 from resume_parser import parse_resume
-from database import save_user_skills, save_feedback, save_career_path, get_saved_paths
+from database import save_user_skills, save_feedback, save_career_path, get_saved_paths, delete_saved_path
 from auth_utils import get_current_user
 from auth_routes import router as auth_router
 
@@ -28,7 +28,6 @@ if not firebase_admin._apps:
     service_account_json_str = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
     cred = None
 
-    # Correctly checks for empty string
     if service_account_json_str and service_account_json_str.strip():
         print("Initializing Firebase Admin SDK from environment variable.")
         try:
@@ -38,7 +37,6 @@ if not firebase_admin._apps:
             print(f"\n!!! FATAL ERROR: Invalid JSON in FIREBASE_SERVICE_ACCOUNT_JSON env var: {e} !!!\n")
             raise e
     else:
-        # Fallback for local dev
         print("Initializing Firebase Admin SDK from local file 'serviceAccountKey.json'.")
         try:
             cred = credentials.Certificate("serviceAccountKey.json")
@@ -60,12 +58,12 @@ app = FastAPI(title="Career Craft API", version="3.0.0")
 @app.get("/")
 def read_root():
     return {"status": "ok", "message": "Welcome to the Career Craft"}
+
 # --- CORS Configuration ---
 origins = [
-    "https://pcsr-v2.web.app",      # Production frontend
-    "http://localhost:5173",      # Local Vite dev server
+    "https://pcsr-v2.web.app",     
+    "http://localhost:5173",     
 ]
-# We also add the service's own URL to the list
 service_url = os.getenv("SERVICE_URL", "https://ai-career-advisor-200369475119.us-central1.run.app")
 if service_url not in origins:
     origins.append(service_url)
@@ -81,8 +79,10 @@ app.add_middleware(
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 
 # --- API ENDPOINTS ---
+api_router = APIRouter()
 
-@app.post("/generate-path", response_model=CareerPathResponse, tags=["V3 Features - Protected"])
+
+@api_router.post("/generate-path", response_model=CareerPathResponse, tags=["V3 Features - Protected"])
 async def generate_career_path_endpoint(
     request: CareerPathRequest,
     current_user: dict = Depends(get_current_user)
@@ -93,7 +93,7 @@ async def generate_career_path_endpoint(
     )
     return CareerPathResponse(**result_dict)
 
-@app.post("/get-skills-for-job", response_model=SkillRequirementsResponse, tags=["V3 Features - Protected"])
+@api_router.post("/get-skills-for-job", response_model=SkillRequirementsResponse, tags=["V3 Features - Protected"])
 async def get_detailed_skills(
     request: SkillRequirementsRequest,
     current_user: dict = Depends(get_current_user)
@@ -101,7 +101,7 @@ async def get_detailed_skills(
     result_dict = get_skills_for_job(job_title=request.job_title)
     return SkillRequirementsResponse(**result_dict)
 
-@app.post("/save-path", tags=["V3 Features - Protected"])
+@api_router.post("/save-path", tags=["V3 Features - Protected"])
 async def save_path(request: SavePathRequest, current_user: dict = Depends(get_current_user)):
     user_id = current_user['uid']
     save_career_path(
@@ -111,13 +111,26 @@ async def save_path(request: SavePathRequest, current_user: dict = Depends(get_c
     )
     return {"status": "success", "message": "Path saved successfully."}
 
-@app.get("/my-paths", tags=["V3 Features - Protected"])
+@api_router.get("/my-paths", tags=["V3 Features - Protected"])
 async def get_my_paths(current_user: dict = Depends(get_current_user)):
     user_id = current_user['uid']
     paths = get_saved_paths(user_id=user_id)
     return {"paths": paths}
 
-@app.post("/suggest-jobs", response_model=JobSuggestionResponse, tags=["V2 Features - Protected"])
+@api_router.delete("/my-paths/{path_id}", tags=["V3 Features - Protected"])
+async def delete_path(path_id: str, current_user: dict = Depends(get_current_user)):
+    user_id = current_user['uid']
+    try:
+        delete_saved_path(user_id=user_id, path_id=path_id)
+        return {"status": "success", "message": "Path deleted successfully."}
+    except Exception as e:
+        if "not found" in str(e).lower():
+            raise HTTPException(status_code=404, detail=str(e))
+        if "permission" in str(e).lower():
+            raise HTTPException(status_code=403, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"An internal error occurred: {e}")
+        
+@api_router.post("/suggest-jobs", response_model=JobSuggestionResponse, tags=["V2 Features - Protected"])
 async def suggest_jobs(
     resume_file: UploadFile = File(None),
     skills: str = Form(None),
@@ -127,7 +140,6 @@ async def suggest_jobs(
     skills_to_save = []
     suggestions_result = {}
 
-    # --- Start of Hardened Logic ---
     try:
         if resume_file:
             resume_text = await parse_resume(resume_file)
@@ -147,14 +159,10 @@ async def suggest_jobs(
             raise HTTPException(status_code=400, detail="Please provide either a resume file or a list of skills.")
 
     except HTTPException as http_exc:
-        # Re-raise exceptions we intentionally created so FastAPI can process them correctly.
         raise http_exc
     except Exception as e:
-        # Catch any other unexpected error (e.g., from parsing, Gemini API, etc.).
         print(f"!!! UNHANDLED CRITICAL ERROR in suggest_jobs endpoint: {e}")
-        # Return a generic 500 error. FastAPI ensures this response has correct CORS headers.
         raise HTTPException(status_code=500, detail="An internal server error occurred while processing the request. Please check the backend logs for more information.")
-    # --- End of Hardened Logic ---
 
     if not suggestions_result or not suggestions_result.get("suggestions"):
         raise HTTPException(status_code=404, detail="The AI advisor could not generate job suggestions for the provided input. Please try a different resume or be more specific with your skills.")
@@ -165,7 +173,7 @@ async def suggest_jobs(
     suggestions_result['parsed_skills'] = skills_to_save
     return suggestions_result
 
-@app.post("/feedback", tags=["V2 Features - Protected"])
+@api_router.post("/feedback", tags=["V2 Features - Protected"])
 async def handle_feedback(
     request: FeedbackRequest,
     current_user: dict = Depends(get_current_user)
@@ -179,10 +187,12 @@ async def handle_feedback(
     )
     return {"status": "success", "message": "Feedback received"}
 
-@app.post("/analyze", response_model=SkillAnalysisResponse, tags=["V1 Features - Protected"])
+@api_router.post("/analyze", response_model=SkillAnalysisResponse, tags=["VList Features - Protected"])
 async def analyze_skills(
     request: SkillAnalysisRequest,
     current_user: dict = Depends(get_current_user)
 ):
     result_dict = analyze_skills_for_job(skills=request.skills, job_title=request.job_title)
     return SkillAnalysisResponse(**result_dict)
+
+app.include_router(api_router, prefix="/api")

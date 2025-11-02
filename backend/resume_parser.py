@@ -1,6 +1,6 @@
 import io
 from fastapi import UploadFile, HTTPException
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 from docx import Document
 
 async def parse_resume(file: UploadFile) -> str:

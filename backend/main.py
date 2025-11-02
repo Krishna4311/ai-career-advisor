@@ -32,10 +32,15 @@ if not firebase_admin._apps:
     service_account_json_str = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
     cred = None
 
-    if service_account_json_str:
+    # --- THIS IS THE FIX ---
+    if service_account_json_str and service_account_json_str.strip():
         print("Initializing Firebase Admin SDK from environment variable.")
-        service_account_info = json.loads(service_account_json_str)
-        cred = credentials.Certificate(service_account_info)
+        try:
+            service_account_info = json.loads(service_account_json_str)
+            cred = credentials.Certificate(service_account_info)
+        except json.JSONDecodeError as e:
+            print(f"\n!!! FATAL ERROR: Invalid JSON in FIREBASE_SERVICE_ACCOUNT_JSON env var: {e} !!!\n")
+            raise e
     else:
         print("Initializing Firebase Admin SDK from local file 'serviceAccountKey.json'.")
         try:

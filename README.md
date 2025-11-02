@@ -60,24 +60,20 @@ flowchart TB
     
     Browser <-->|HTTPS| Hosting
     Hosting <-->|Auth Tokens| Auth
-    Hosting -->|Proxy api requests| CloudRun
+    Hosting -->|Proxy /api/** requests| CloudRun
     CloudRun <-->|Verify Tokens| Auth
     CloudRun <-->|AI Prompts & Responses| Gemini
     CloudRun <-->|Read/Write Data| Firestore
     
     style Browser fill:#e1f5ff,stroke:#0066cc,stroke-width:3px,color:#000
+    style Firebase fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
     style Hosting fill:#ffecb3,stroke:#ff9800,stroke-width:2px,color:#000
     style Auth fill:#ffecb3,stroke:#ff9800,stroke-width:2px,color:#000
+    style GCP fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#000
     style CloudRun fill:#c8e6c9,stroke:#4caf50,stroke-width:2px,color:#000
+    style Services fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px,color:#000
     style Gemini fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px,color:#000
     style Firestore fill:#fff3e0,stroke:#ff6f00,stroke-width:2px,color:#000
-    style Client fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
-    style Firebase fill:#fff8e1,stroke:#f57c00,stroke-width:2px,color:#000
-    style GCP fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#000
-    style AIServices fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#000
-    style Database fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#000
-    style AITitle fill:#fce4ec,stroke:none,color:#000
-    style DBTitle fill:#fff3e0,stroke:none,color:#000
 ```
 
 ## Application Workflows

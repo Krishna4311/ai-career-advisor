@@ -29,136 +29,158 @@ This project uses a decoupled, full-stack architecture hosted entirely on the Go
   * **Authentication:** **Firebase Authentication** handles user sign-up, login (including Google OAuth), and secure token verification.
 
 -----
+```mermaid
+flowchart TB
+    subgraph Client["Client Layer"]
+        Browser["End User<br/>(Browser)"]
+    end
+    
+    subgraph Firebase["Firebase Services"]
+        Hosting["Firebase Hosting (CDN)<br/>━━━━━━━━━━━━━━━<br/>• Frontend (React JS)<br/>• Proxy Rewrites (/api/**)"]
+        Auth["Firebase Authentication<br/>━━━━━━━━━━━━━━━<br/>• Handles Login/Signup<br/>• Email/Password<br/>• Google OAuth"]
+    end
+    
+    subgraph GCP["Google Cloud Platform"]
+        CloudRun["Google Cloud Run<br/>━━━━━━━━━━━━━━━<br/>• FastAPI (Python) Server<br/>• All API Logic (/api/...)<br/>• Auth Middleware"]
+        
+        subgraph AIServices[" "]
+            direction TB
+            AITitle["<b>AI Services</b>"]
+            Gemini["Google AI Platform<br/>━━━━━━━━━━━━━━━<br/>• Gemini Flash (GenAI)<br/>• Uses Secret Manager"]
+            AITitle ~~~ Gemini
+        end
+        
+        subgraph Database[" "]
+            direction TB
+            DBTitle["<b>Database Layer</b>"]
+            Firestore["Firestore Database<br/>━━━━━━━━━━━━━━━<br/>Collections:<br/>• /users (skills)<br/>• /saved_paths<br/>• /job_skills_cache"]
+            DBTitle ~~~ Firestore
+        end
+    end
+    
+    Browser <-->|HTTPS| Hosting
+    Hosting <-->|Auth Tokens| Auth
+    Hosting -->|Proxy api requests| CloudRun
+    CloudRun <-->|Verify Tokens| Auth
+    CloudRun <-->|AI Prompts & Responses| Gemini
+    CloudRun <-->|Read/Write Data| Firestore
+    
+    style Browser fill:#e1f5ff,stroke:#0066cc,stroke-width:3px,color:#000
+    style Hosting fill:#ffecb3,stroke:#ff9800,stroke-width:2px,color:#000
+    style Auth fill:#ffecb3,stroke:#ff9800,stroke-width:2px,color:#000
+    style CloudRun fill:#c8e6c9,stroke:#4caf50,stroke-width:2px,color:#000
+    style Gemini fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px,color:#000
+    style Firestore fill:#fff3e0,stroke:#ff6f00,stroke-width:2px,color:#000
+    style Client fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
+    style Firebase fill:#fff8e1,stroke:#f57c00,stroke-width:2px,color:#000
+    style GCP fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#000
+    style AIServices fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#000
+    style Database fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#000
+    style AITitle fill:#fce4ec,stroke:none,color:#000
+    style DBTitle fill:#fff3e0,stroke:none,color:#000
+```
 
 ## Application Workflows
 
 Below are the text-based flows for the application's core features. All API requests are securely proxied through Firebase Hosting to the Cloud Run backend.
 
-### Workflow 1: Job Suggestion (from Resume)
-
-This flow is triggered when a user uploads their resume.
-
-```
-[User (Browser)]
-    |
-    1. Uploads "resume.pdf" to the React frontend.
-    |
-    v
-[Frontend (Firebase Hosting)]
-    |
-    2. Attaches the Firebase Auth token to the request.
-    3. Sends a POST request to the relative path: "/api/suggest-jobs".
-    |
-    v
-[Backend (Cloud Run - FastAPI)]
-    |
-    4. Receives request, verifies Auth token, and parses the "resume.pdf" into text.
-    5. Sends the text to the Gemini AI with a prompt to extract skills and suggest jobs.
-    |
-    v
-[Google AI (Gemini)]
-    |
-    6. Analyzes the text and returns a structured JSON object:
-       { "parsed_skills": [...], "suggestions": [...] }
-    |
-    v
-[Backend (Cloud Run - FastAPI)]
-    |
-    7. Saves the "parsed_skills" to the user's profile in Firestore.
-    8. Returns the JSON with job suggestions to the frontend.
-    |
-    v
-[Frontend (Firebase Hosting)]
-    |
-    9. Renders the list of suggested jobs and parsed skills for the user.
-```
-
-### Workflow 2: Career Path Generation
-
-This flow is triggered when a user fills out the "Career Path" form.
-
-```
-[User (Browser)]
-    |
-    1. Enters "Current Skills" and a "Target Job" into the form.
-    2. Clicks "Generate Career Path".
-    |
-    v
-[Frontend (Firebase Hosting)]
-    |
-    3. Attaches the Firebase Auth token to the request.
-    4. Sends a POST request with the JSON payload to "/api/generate-path".
-    |
-    v
-[Backend (Cloud Run - FastAPI)]
-    |
-    5. Receives request and verifies the Auth token.
-    6. Sends the skills and job title to the Gemini AI with a prompt to generate a plan.
-    |
-    v
-[Google AI (Gemini)]
-    |
-    7. Analyzes the request and returns a structured JSON object:
-       { "milestones": [...], "next_skills": [...], "recommended_actions": [...] }
-    |
-    v
-[Backend (Cloud Run - FastAPI)]
-    |
-    8. Returns the JSON path data to the frontend.
-    |
-    v
-[Frontend (Firebase Hosting)]
-    |
-    9. Renders the complete, step-by-step career path for the user.
-```
-
-### Workflow 3: Saving and Viewing a Path
-
-This flow covers both saving a new path and retrieving all saved paths.
-
-**A) Saving a Path:**
-
-```
-[User (Browser)]
-    |
-    1. Clicks "Save this Path" after a path is generated.
-    |
-    v
-[Frontend (Firebase Hosting)]
-    |
-    2. Attaches the Auth token.
-    3. Sends a POST request with the path data to "/api/save-path".
-    |
-    v
-[Backend (Cloud Run - FastAPI)]
-    |
-    4. Receives request and verifies the Auth token.
-    5. Creates a new document in the "saved_paths" collection in Firestore, associating it with the user's ID.
-    6. Returns a "200 OK" success message.
-```
-
-**B) Viewing Saved Paths:**
-
-```
-[User (Browser)]
-    |
-    1. Clicks the "Saved Paths" button in the navigation bar.
-    |
-    v
-[Frontend (Firebase Hosting)]
-    |
-    2. Attaches the Auth token.
-    3. Sends a GET request to "/api/my-paths".
-    |
-    v
-[Backend (Cloud Run - FastAPI)]
-    |
-    4. Receives request and verifies the Auth token.
-    5. Queries the "saved_paths" collection in Firestore for all documents where "userId" matches the user's ID.
-    6. Returns a JSON list of all found paths.
-    |
-    v
-[Frontend (Firebase Hosting)]
-    |
-    7. Renders the list of saved paths in the sidebar.
-```
+## WorkFlow
+```mermaid
+flowchart TD
+    Start([User Opens Application])
+    
+    %% Workflow 1
+    W1_Start["WORKFLOW 1:<br/>Job Suggestion"]
+    W1_1["User uploads<br/>resume.pdf"]
+    W1_2["Frontend attaches token<br/>POST /api/suggest-jobs"]
+    W1_3["Backend verifies token<br/>& parses PDF"]
+    W1_4["Sends text to<br/>Gemini AI"]
+    W1_5["Gemini returns:<br/>{parsed_skills,<br/>suggestions}"]
+    W1_6["Backend saves skills<br/>to Firestore"]
+    W1_7["Backend returns<br/>job suggestions"]
+    W1_8["Frontend renders<br/>jobs & skills"]
+    
+    %% Workflow 2
+    W2_Start["WORKFLOW 2:<br/>Career Path"]
+    W2_1["User enters skills<br/>& target job"]
+    W2_2["Frontend attaches token<br/>POST /api/generate-path"]
+    W2_3["Backend verifies<br/>token"]
+    W2_4["Sends data to<br/>Gemini AI"]
+    W2_5["Gemini returns:<br/>{milestones,<br/>next_skills, actions}"]
+    W2_6["Backend returns<br/>path data"]
+    W2_7["Frontend renders<br/>career path"]
+    
+    %% Workflow 3A
+    W3A_Start["WORKFLOW 3A:<br/>Save Path"]
+    W3A_1["User clicks<br/>Save this Path"]
+    W3A_2["Frontend attaches token<br/>POST /api/save-path"]
+    W3A_3["Backend verifies<br/>token"]
+    W3A_4["Creates document in<br/>saved_paths collection"]
+    W3A_5["Returns<br/>200 OK"]
+    
+    %% Workflow 3B
+    W3B_Start["WORKFLOW 3B:<br/>View Saved Paths"]
+    W3B_1["User clicks<br/>Saved Paths"]
+    W3B_2["Frontend attaches token<br/>GET /api/my-paths"]
+    W3B_3["Backend verifies token<br/>& queries Firestore"]
+    W3B_4["Returns list of<br/>saved paths"]
+    W3B_5["Frontend renders<br/>saved paths"]
+    
+    %% Main flow
+    Start --> W1_Start
+    Start --> W2_Start
+    Start --> W3A_Start
+    Start --> W3B_Start
+    
+    %% Workflow 1 connections
+    W1_Start --> W1_1 --> W1_2 --> W1_3 --> W1_4 --> W1_5 --> W1_6 --> W1_7 --> W1_8
+    
+    %% Workflow 2 connections
+    W2_Start --> W2_1 --> W2_2 --> W2_3 --> W2_4 --> W2_5 --> W2_6 --> W2_7
+    
+    %% Workflow 3A connections
+    W3A_Start --> W3A_1 --> W3A_2 --> W3A_3 --> W3A_4 --> W3A_5
+    
+    %% Workflow 3B connections
+    W3B_Start --> W3B_1 --> W3B_2 --> W3B_3 --> W3B_4 --> W3B_5
+    
+    %% Cross-workflow interactions
+    W1_8 -.->|Can proceed to| W2_1
+    W2_7 -.->|Can proceed to| W3A_1
+    W3A_5 -.->|Can view| W3B_1
+    
+    %% Styling
+    style Start fill:#e1f5ff,stroke:#0066cc,stroke-width:3px,color:#000
+    
+    style W1_Start fill:#ff9800,stroke:#e65100,stroke-width:3px,color:#000
+    style W1_1 fill:#e1f5ff,stroke:#0066cc,stroke-width:2px,color:#000
+    style W1_2 fill:#ffecb3,stroke:#ff9800,stroke-width:2px,color:#000
+    style W1_3 fill:#c8e6c9,stroke:#4caf50,stroke-width:2px,color:#000
+    style W1_4 fill:#c8e6c9,stroke:#4caf50,stroke-width:2px,color:#000
+    style W1_5 fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px,color:#000
+    style W1_6 fill:#c8e6c9,stroke:#4caf50,stroke-width:2px,color:#000
+    style W1_7 fill:#c8e6c9,stroke:#4caf50,stroke-width:2px,color:#000
+    style W1_8 fill:#ffecb3,stroke:#ff9800,stroke-width:2px,color:#000
+    
+    style W2_Start fill:#4caf50,stroke:#2e7d32,stroke-width:3px,color:#000
+    style W2_1 fill:#e1f5ff,stroke:#0066cc,stroke-width:2px,color:#000
+    style W2_2 fill:#ffecb3,stroke:#ff9800,stroke-width:2px,color:#000
+    style W2_3 fill:#c8e6c9,stroke:#4caf50,stroke-width:2px,color:#000
+    style W2_4 fill:#c8e6c9,stroke:#4caf50,stroke-width:2px,color:#000
+    style W2_5 fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px,color:#000
+    style W2_6 fill:#c8e6c9,stroke:#4caf50,stroke-width:2px,color:#000
+    style W2_7 fill:#ffecb3,stroke:#ff9800,stroke-width:2px,color:#000
+    
+    style W3A_Start fill:#9c27b0,stroke:#6a1b9a,stroke-width:3px,color:#000
+    style W3A_1 fill:#e1f5ff,stroke:#0066cc,stroke-width:2px,color:#000
+    style W3A_2 fill:#ffecb3,stroke:#ff9800,stroke-width:2px,color:#000
+    style W3A_3 fill:#c8e6c9,stroke:#4caf50,stroke-width:2px,color:#000
+    style W3A_4 fill:#c8e6c9,stroke:#4caf50,stroke-width:2px,color:#000
+    style W3A_5 fill:#c8e6c9,stroke:#4caf50,stroke-width:2px,color:#000
+    
+    style W3B_Start fill:#c2185b,stroke:#880e4f,stroke-width:3px,color:#000
+    style W3B_1 fill:#e1f5ff,stroke:#0066cc,stroke-width:2px,color:#000
+    style W3B_2 fill:#ffecb3,stroke:#ff9800,stroke-width:2px,color:#000
+    style W3B_3 fill:#c8e6c9,stroke:#4caf50,stroke-width:2px,color:#000
+    style W3B_4 fill:#c8e6c9,stroke:#4caf50,stroke-width:2px,color:#000
+    style W3B_5 fill:#ffecb3,stroke:#ff9800,stroke-width:2px,color:#000

@@ -1,8 +1,9 @@
 import React, { useRef } from 'react';
 import { useAuth } from '../AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { auth, provider } from '../firebase'; // Firebase setup
+import { auth, provider } from '../firebase'; 
 import { signInWithPopup } from 'firebase/auth';
+import { API_URL } from '../api/config'; 
 
 export default function LoginPage() {
   const emailRef = useRef();
@@ -14,7 +15,7 @@ export default function LoginPage() {
     e.preventDefault();
     try {
       await login(emailRef.current.value, passwordRef.current.value);
-      navigate("/"); // Redirect to home on success
+      navigate("/"); 
     } catch {
       alert("Failed to log in. Please check your email and password.");
     }
@@ -24,10 +25,9 @@ export default function LoginPage() {
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-      const idToken = await user.getIdToken(); // Firebase ID token
+      const idToken = await user.getIdToken(); 
 
-      // Send ID token to backend for verification
-      const response = await fetch("/auth/google-login", {
+      const response = await fetch(`${API_URL}/auth/google-login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -35,6 +35,8 @@ export default function LoginPage() {
         body: JSON.stringify({ idToken }),
       });
 
+      if (!response.ok) throw new Error('Backend verification failed.');
+      
       const data = await response.json();
       console.log("Backend verified user:", data);
 
@@ -59,6 +61,14 @@ export default function LoginPage() {
         </div>
         <button className="analyze-button" type="submit">Log In</button>
       </form>
+      
+      <button 
+        className="secondary-button" 
+        onClick={handleGoogleSignIn} 
+        style={{ width: '100%', maxWidth: '400px', marginTop: '1rem' }}
+      >
+        Sign In with Google
+      </button>
 
       <div style={{ marginTop: '1rem' }}>
         Need an account? <Link to="/signup">Sign Up</Link>

@@ -26,13 +26,13 @@ from agent import (
 from resume_parser import parse_resume
 from database import save_user_skills, save_feedback, save_career_path, get_saved_paths
 from auth_utils import get_current_user
-from auth_routes import router as auth_router
+from auth_routes import router as auth_router # Corrected import
 
 if not firebase_admin._apps:
     service_account_json_str = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
     cred = None
 
-    # --- THIS IS THE FIX ---
+    # Correctly checks for empty string
     if service_account_json_str and service_account_json_str.strip():
         print("Initializing Firebase Admin SDK from environment variable.")
         try:
@@ -42,6 +42,7 @@ if not firebase_admin._apps:
             print(f"\n!!! FATAL ERROR: Invalid JSON in FIREBASE_SERVICE_ACCOUNT_JSON env var: {e} !!!\n")
             raise e
     else:
+        # Fallback for local dev
         print("Initializing Firebase Admin SDK from local file 'serviceAccountKey.json'.")
         try:
             cred = credentials.Certificate("serviceAccountKey.json")
@@ -61,19 +62,29 @@ if not firebase_admin._apps:
 
 app = FastAPI(title="Career Craft API", version="3.0.0")
 
+# --- THIS IS THE CORRECT CORS FIX ---
+origins = [
+    "https://pcsr-v2.web.app",       # Your production frontend
+    "http://localhost:5173",       # Your local Vite dev server
+]
+# We also add the service's own URL to the list
+service_url = os.getenv("SERVICE_URL", "https://ai-career-advisor-200369475119.us-central1.run.app")
+if service_url not in origins:
+    origins.append(service_url)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,         # Use the specific list
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# --- END OF FIX ---
 
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 
 
 # --- API ENDPOINTS ---
-# --- V3 PROTECTED ENDPOINTS ---
 @app.post("/api/generate-path", response_model=CareerPathResponse, tags=["V3 Features - Protected"])
 async def generate_career_path_endpoint(
     request: CareerPathRequest, 
@@ -111,7 +122,6 @@ async def get_my_paths(current_user: dict = Depends(get_current_user)):
     paths = get_saved_paths(user_id=user_id)
     return {"paths": paths}
 
-# --- V2 PUBLIC ENDPOINTS ---
 @app.post("/api/suggest-jobs", response_model=JobSuggestionResponse, tags=["V2 Features - Protected"]) 
 async def suggest_jobs(
     resume_file: UploadFile = File(None), 
@@ -120,7 +130,6 @@ async def suggest_jobs(
 ):
     user_id = current_user['uid']
     
-    content_for_agent = ""
     skills_to_save = []
     
     if resume_file:
@@ -136,6 +145,9 @@ async def suggest_jobs(
         raise HTTPException(status_code=400, detail="Please provide either a resume or skills.")
     
     save_user_skills(user_id=user_id, skills=skills_to_save) 
+    
+    # Corrected logic: The redundant call is removed.
+    
     suggestions_result['parsed_skills'] = skills_to_save
     
     return suggestions_result
@@ -155,7 +167,6 @@ async def handle_feedback(
     )
     return {"status": "success", "message": "Feedback received"}
 
-# --- V1 PROTECTED ENDPOINT ---
 @app.post("/api/analyze", response_model=SkillAnalysisResponse, tags=["V1 Features - Protected"])
 async def analyze_skills(
     request: SkillAnalysisRequest,
@@ -164,3 +175,5 @@ async def analyze_skills(
     user_id = current_user['uid'] 
     result_dict = analyze_skills_for_job(skills=request.skills, job_title=request.job_title)
     return SkillAnalysisResponse(**result_dict)
+
+# No app.mount() line. This is correct.

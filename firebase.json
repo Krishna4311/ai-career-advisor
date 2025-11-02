@@ -9,11 +9,17 @@
     "rewrites": [
       {
         "source": "/api/**",
-        "destination": "https://ai-career-advisor-200369475119-200369475119.us-central1.run.app/api/:splat"
+        "run": {
+          "serviceId": "ai-career-advisor-200369475119",
+          "region": "us-central1"
+        }
       },
       {
         "source": "/auth/**",
-        "destination": "https://ai-career-advisor-200369475119-200369475119.us-central1.run.app/auth/:splat"
+        "run": {
+          "serviceId": "ai-career-advisor-200369475119",
+          "region": "us-central1"
+        }
       },
       {
         "source": "**",

@@ -23,7 +23,8 @@ function SavedPathsSidebar({ isOpen, onClose }) {
         try {
           const token = await currentUser.getIdToken();
           const response = await fetch(`${API_URL}/api/my-paths`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { 'Authorization': `Bearer ${token}` },
+            cache: 'no-store'
           });
           if (!response.ok) throw new Error("Failed to load saved paths.");
           const data = await response.json();

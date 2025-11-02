@@ -184,3 +184,41 @@ def extract_skills_from_structured_data(resume_json: dict) -> list[str]:
     combined_text = f"Skills Section: {str(skills_section)}\nExperience Section: {str(experience_section)}"
     
     return extract_skills_from_text(combined_text)
+
+# [Add this function to backend/agent.py]
+
+async def get_suggestions_and_skills_from_resume(resume_text: str) -> dict:
+    """
+    Consolidated function:
+    Gets job suggestions AND extracts skills from a resume in a single LLM call.
+    """
+    prompt = f"""
+    You are an expert career advisor and resume parser. Based on the following resume text, perform two tasks:
+    1.  Extract a clean list of all technical and soft skills.
+    2.  Suggest 5 job titles that would be a good fit for this resume.
+
+    Resume Text:
+    ---
+    {resume_text[:4000]}
+    ---
+
+    Return a JSON object with two keys:
+    1.  "parsed_skills": A list of strings (e.g., ["Python", "React", "SQL", "Teamwork"]).
+    2.  "suggestions": A list of objects. Each object must have "job_title" (string) and "match_score" (integer 0-100).
+    """
+    try:
+        # We use CREATIVE_JSON_CONFIG for this combined task
+        response = await model.generate_content_async(prompt, generation_config=CREATIVE_JSON_CONFIG)
+        
+        data = json.loads(response.text)
+        
+        # Ensure suggestions get a unique ID for feedback
+        for suggestion in data.get("suggestions", []):
+            suggestion["suggestion_id"] = str(uuid.uuid4())
+            
+        return data
+
+    except Exception as e:
+        print(f"Agent Error (get_suggestions_and_skills_from_resume): {e}")
+        # Return a safe, empty schema
+        return {"parsed_skills": [], "suggestions": []}

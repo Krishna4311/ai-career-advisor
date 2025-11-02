@@ -1,6 +1,8 @@
 
 # Career Craft: AI Career Advisor
 
+## Live Application: https://pcsr-v2.web.app
+
 Career Craft is an intelligent, full-stack web application that acts as a personalized career advisor. It uses Google's Gemini AI to analyze a user's skills against their career goals, providing personalized job suggestions and actionable, step-by-step career roadmaps.
 
 The application's primary goal is to empower users with a clear, personalized plan to navigate from their current position to their desired career.
